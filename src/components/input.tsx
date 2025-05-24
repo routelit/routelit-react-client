@@ -1,0 +1,55 @@
+import { memo, useRef } from "react";
+import { useFormDispatcherWithAttr, useIsLoading } from "../core/context";
+
+function TextInputComponent({
+  id,
+  label,
+  value,
+  type = "text",
+  ...props
+}: {
+  id: string;
+  label?: string;
+} & React.InputHTMLAttributes<HTMLInputElement>) {
+  const isLoading = useIsLoading();
+  const dispatchChange = useFormDispatcherWithAttr(id, "change", "value");
+  const lastValueRef = useRef(value);
+
+  function handleChange(newValue: string) {
+    if (newValue !== lastValueRef.current) {
+      dispatchChange(newValue);
+      lastValueRef.current = newValue;
+    }
+  }
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    handleChange(e.target.value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleChange((e.target as HTMLInputElement).value);
+    }
+  };
+  const required = props.required;
+
+  return (
+    <>
+      {label && <label htmlFor={id}>{label} {required && <span className="rl-required">*</span>}</label>}
+      <input
+        type={type}
+        id={id}
+        {...props}
+        disabled={isLoading || props.disabled}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        defaultValue={value}
+      />
+    </>
+  );
+}
+
+const TextInput = memo(TextInputComponent);
+TextInput.displayName = "TextInput";
+
+export default TextInput;
