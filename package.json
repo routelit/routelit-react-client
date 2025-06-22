@@ -1,9 +1,9 @@
 {
   "name": "routelit-client",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "repository": {
     "type": "git",
-    "url": "https://github.com/routelit/routelit-client.git"
+    "url": "git+https://github.com/routelit/routelit-react-client.git"
   },
   "private": false,
   "main": "./dist/routelit-client.umd.js",
@@ -16,6 +16,8 @@
     "build:types": "npx tsc -p tsconfig.lib.json",
     "build:lib:all": "npm run build:lib:prod && npm run build:lib:dev",
     "build:lib": "rm -rf dist && npm run build:lib:all && npm run build:types",
+    "build:debug": "NODE_OPTIONS='--experimental-global-webcrypto' BUILD_TARGET=debug vite build --mode development",
+    "build:prod": "NODE_OPTIONS='--experimental-global-webcrypto' BUILD_TARGET=prod vite build --mode production",
     "prepublishOnly": "npm run build:lib",
     "coverage": "NODE_OPTIONS='--experimental-global-webcrypto' vitest run --coverage",
     "dev": "vite",

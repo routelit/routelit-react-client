@@ -31,6 +31,7 @@ import {
   useError,
 } from "./core/context";
 import { RouteLitManager } from "./core/manager";
+import { renderApp } from "./app-factory";
 
 // Define the type for our client interface
 export interface RoutelitClientType {
@@ -42,6 +43,7 @@ export interface RoutelitClientType {
   useFormDispatcher: typeof useFormDispatcher;
   useIsLoading: typeof useIsLoading;
   useError: typeof useError;
+  renderApp: (rootId?: string) => void;
 }
 
 // Check if we already have an instance in the window object
@@ -54,7 +56,11 @@ declare global {
   interface Window {
     React: typeof React;
     ReactDOM: typeof ReactDOM;
-    jsxRuntime: typeof jsxRuntime;
+    jsxRuntime: {
+      jsx: typeof React.createElement;
+      jsxs: typeof React.createElement;
+      Fragment: typeof React.Fragment;
+    };
     RoutelitClient?: RoutelitClientType;
     componentStore?: ComponentStore;
   }
@@ -67,31 +73,32 @@ if (window.RoutelitClient) {
 } else {
   manager = initManager("routelit-data");
   componentStore = new ComponentStore();
-
-  // Register components
-  componentStore.register("fragment", Fragment);
-  componentStore.register("link", Link);
-  componentStore.register("dialog", Dialog);
-  componentStore.register("form", Form);
-  componentStore.register("head", Head);
-  componentStore.register("container", Container);
-  componentStore.register("markdown", Markdown);
-  componentStore.register("image", Image);
-  componentStore.register("button", Button);
-  componentStore.register("expander", Expander);
-  componentStore.register("heading", Heading);
-  componentStore.register("title", Title);
-  componentStore.register("header", Header);
-  componentStore.register("subheader", Subheader);
-  componentStore.register("flex", Flex);
-  componentStore.register("text-input", Input);
-  componentStore.register("radio", Radio);
-  componentStore.register("select", Select);
-  componentStore.register("textarea", Textarea);
-  componentStore.register("checkbox", Checkbox);
-  componentStore.register("checkbox-group", CheckboxGroup);
-  componentStore.forceUpdate();
 }
+
+// Register components
+componentStore.register("fragment", Fragment);
+componentStore.register("link", Link);
+componentStore.register("dialog", Dialog);
+componentStore.register("form", Form);
+componentStore.register("head", Head);
+componentStore.register("container", Container);
+componentStore.register("markdown", Markdown);
+componentStore.register("image", Image);
+componentStore.register("button", Button);
+componentStore.register("expander", Expander);
+componentStore.register("heading", Heading);
+componentStore.register("title", Title);
+componentStore.register("header", Header);
+componentStore.register("subheader", Subheader);
+componentStore.register("flex", Flex);
+componentStore.register("text-input", Input);
+componentStore.register("radio", Radio);
+componentStore.register("select", Select);
+componentStore.register("textarea", Textarea);
+componentStore.register("checkbox", Checkbox);
+componentStore.register("checkbox-group", CheckboxGroup);
+componentStore.forceUpdate();
+
 
 export {
   useDispatcherWith,
@@ -102,6 +109,7 @@ export {
   useError,
   useFormDispatcherWithAttr,
   useFormDispatcher,
+  renderApp,
 };
 
 const RoutelitClient: RoutelitClientType = {
@@ -113,12 +121,17 @@ const RoutelitClient: RoutelitClientType = {
   useError,
   useFormDispatcherWithAttr,
   useFormDispatcher,
+  renderApp,
 };
 
 // Expose them globally
 window.React = React;
 window.ReactDOM = ReactDOM;
-window.jsxRuntime = jsxRuntime;
+window.jsxRuntime = {
+  jsx: React.createElement,
+  jsxs: React.createElement,
+  Fragment: React.Fragment
+};
 window.RoutelitClient = RoutelitClient;
 
 export { React, ReactDOM, jsxRuntime, RoutelitClient };
