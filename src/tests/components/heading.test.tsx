@@ -4,7 +4,7 @@ import { Heading, Title, Header, Subheader } from '../../components/heading';
 describe('Heading Components', () => {
   describe('Heading Component', () => {
     it('renders with default level 1', () => {
-      render(<Heading>Test Heading</Heading>);
+      render(<Heading body="Test Heading" />);
       
       const heading = screen.getByRole('heading', { level: 1 });
       expect(heading).toBeInTheDocument();
@@ -13,7 +13,7 @@ describe('Heading Components', () => {
     });
 
     it('renders with specified level', () => {
-      render(<Heading level={3}>Test Heading</Heading>);
+      render(<Heading level={3} body="Test Heading" />);
       
       const heading = screen.getByRole('heading', { level: 3 });
       expect(heading).toBeInTheDocument();
@@ -25,7 +25,7 @@ describe('Heading Components', () => {
       const levels = [1, 2, 3, 4, 5, 6] as const;
       
       levels.forEach(level => {
-        const { unmount } = render(<Heading level={level}>{`Level ${level} Heading`}</Heading>);
+        const { unmount } = render(<Heading level={level} body={`Level ${level} Heading`} />);
         
         const heading = screen.getByRole('heading', { level });
         expect(heading).toBeInTheDocument();
@@ -43,7 +43,8 @@ describe('Heading Components', () => {
           className="custom-class"
           id="test-heading"
           data-testid="heading-test"
-        >Test Heading</Heading>
+          body="Test Heading"
+        />
       );
       
       const heading = screen.getByTestId('heading-test');
@@ -54,11 +55,11 @@ describe('Heading Components', () => {
 
     it('renders with React node as body', () => {
       render(
-        <Heading level={2}>
+        <Heading level={2} body={
           <span>
             Complex <strong>content</strong> with <em>markup</em>
           </span>
-        </Heading>
+        } />
       );
       
       const heading = screen.getByRole('heading', { level: 2 });
@@ -68,7 +69,7 @@ describe('Heading Components', () => {
     });
 
     it('renders without body prop', () => {
-      render(<Heading level={1}>{''}</Heading>);
+      render(<Heading level={1} body="" />);
       
       const heading = screen.getByRole('heading', { level: 1 });
       expect(heading).toBeInTheDocument();
@@ -77,7 +78,7 @@ describe('Heading Components', () => {
 
     it('supports event handlers', () => {
       const handleClick = vi.fn();
-      render(<Heading onClick={handleClick}>Clickable Heading</Heading>);
+      render(<Heading onClick={handleClick} body="Clickable Heading" />);
       
       const heading = screen.getByRole('heading', { level: 1 });
       heading.click();
@@ -88,7 +89,7 @@ describe('Heading Components', () => {
 
   describe('Title Component', () => {
     it('renders as h1 element', () => {
-      render(<Title>Page Title</Title>);
+      render(<Title body="Page Title" />);
       
       const title = screen.getByRole('heading', { level: 1 });
       expect(title).toBeInTheDocument();
@@ -101,7 +102,8 @@ describe('Heading Components', () => {
         <Title 
           className="title-class"
           data-testid="title-test"
-        >Custom Title</Title>
+          body="Custom Title"
+        />
       );
       
       const title = screen.getByTestId('title-test');
@@ -110,7 +112,7 @@ describe('Heading Components', () => {
     });
 
     it('ignores level prop and always renders as h1', () => {
-      render(<Title>Title</Title>);
+      render(<Title body="Title" />);
       
       const title = screen.getByRole('heading', { level: 1 });
       expect(title).toBeInTheDocument();
@@ -120,7 +122,7 @@ describe('Heading Components', () => {
 
   describe('Header Component', () => {
     it('renders as h2 element', () => {
-      render(<Header>Section Header</Header>);
+      render(<Header body="Section Header" />);
       
       const header = screen.getByRole('heading', { level: 2 });
       expect(header).toBeInTheDocument();
@@ -133,7 +135,8 @@ describe('Heading Components', () => {
         <Header 
           className="header-class"
           data-testid="header-test"
-        >Custom Header</Header>
+          body="Custom Header"
+        />
       );
       
       const header = screen.getByTestId('header-test');
@@ -142,7 +145,7 @@ describe('Heading Components', () => {
     });
 
     it('ignores level prop and always renders as h2', () => {
-      render(<Header>Header</Header>);
+      render(<Header body="Header" />);
       
       const header = screen.getByRole('heading', { level: 2 });
       expect(header).toBeInTheDocument();
@@ -152,7 +155,7 @@ describe('Heading Components', () => {
 
   describe('Subheader Component', () => {
     it('renders as h3 element', () => {
-      render(<Subheader>Subsection Header</Subheader>);
+      render(<Subheader body="Subsection Header" />);
       
       const subheader = screen.getByRole('heading', { level: 3 });
       expect(subheader).toBeInTheDocument();
@@ -165,7 +168,8 @@ describe('Heading Components', () => {
         <Subheader 
           className="subheader-class"
           data-testid="subheader-test"
-        >Custom Subheader</Subheader>
+          body="Custom Subheader"
+        />
       );
       
       const subheader = screen.getByTestId('subheader-test');
@@ -174,7 +178,7 @@ describe('Heading Components', () => {
     });
 
     it('ignores level prop and always renders as h3', () => {
-      render(<Subheader>Subheader</Subheader>);
+      render(<Subheader body="Subheader" />);
       
       const subheader = screen.getByRole('heading', { level: 3 });
       expect(subheader).toBeInTheDocument();
@@ -186,9 +190,9 @@ describe('Heading Components', () => {
     it('maintains proper heading hierarchy', () => {
       render(
         <div>
-          <Title>Main Title</Title>
-          <Header>Section Header</Header>
-          <Subheader>Subsection Header</Subheader>
+          <Title body="Main Title" />
+          <Header body="Section Header" />
+          <Subheader body="Subsection Header" />
         </div>
       );
       
@@ -206,7 +210,8 @@ describe('Heading Components', () => {
         <Heading 
           aria-label="Custom accessible label"
           aria-describedby="description"
-        >Accessible Heading</Heading>
+          body="Accessible Heading"
+        />
       );
       
       const heading = screen.getByRole('heading', { level: 1 });
