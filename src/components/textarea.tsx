@@ -33,7 +33,7 @@ function TextareaComponent({
   const required = props.required;
 
   return (
-    <>
+    <div className="rl-form-group">
       {label && <label htmlFor={id}>{label} {required && <span className="rl-required">*</span>}</label>}
       <textarea
         id={id}
@@ -43,7 +43,7 @@ function TextareaComponent({
         onKeyDown={handleKeyDown}
         defaultValue={value}
       />
-    </>
+    </div>
   );
 }
 

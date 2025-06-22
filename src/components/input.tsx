@@ -34,7 +34,7 @@ function TextInputComponent({
   const required = props.required;
 
   return (
-    <>
+    <div className="rl-form-group">
       {label && <label htmlFor={id}>{label} {required && <span className="rl-required">*</span>}</label>}
       <input
         type={type}
@@ -45,7 +45,7 @@ function TextInputComponent({
         onKeyDown={handleKeyDown}
         defaultValue={value}
       />
-    </>
+    </div>
   );
 }
 

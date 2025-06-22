@@ -45,7 +45,7 @@ const Select = memo(function Select({
   }
 
   return (
-    <>
+    <div className="rl-form-group">
       {label && (
         <label htmlFor={id}>
           {label} {required && <span className="rl-required">*</span>}
@@ -66,7 +66,7 @@ const Select = memo(function Select({
           />
         ))}
       </select>
-    </>
+    </div>
   );
 });
 

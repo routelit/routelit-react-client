@@ -2,23 +2,23 @@ import React from "react";
 
 interface HeadingProps extends React.HTMLAttributes<HTMLHeadingElement> {
   level?: 1 | 2 | 3 | 4 | 5 | 6;
-  children: React.ReactNode;
+  body: React.ReactNode;
 }
 
-function Heading({ children, level = 1, ...props }: HeadingProps) {
-  return React.createElement(`h${level}`, props, children);
+function Heading({ body, level = 1, ...props }: HeadingProps) {
+  return React.createElement(`h${level}`, props, body);
 }
 
-function Title({ children, ...props }: HeadingProps) {
-  return <Heading level={1} {...props}>{children}</Heading>;
+function Title({ body, ...props }: HeadingProps) {
+  return <Heading level={1} {...props} body={body} />;
 }
 
-function Header({ children, ...props }: HeadingProps) {
-  return <Heading level={2} {...props}>{children}</Heading>;
+function Header({ body, ...props }: HeadingProps) {
+  return <Heading level={2} {...props} body={body} />;
 }
 
-function Subheader({ children, ...props }: HeadingProps) {
-  return <Heading level={3} {...props}>{children}</Heading>;
+function Subheader({ body, ...props }: HeadingProps) {
+  return <Heading level={3} {...props} body={body} />;
 }
 
 export { Heading, Title, Header, Subheader };

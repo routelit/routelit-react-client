@@ -72,7 +72,7 @@ const CheckboxGroup = memo(function CheckboxGroup({
     [dispatchChange, value]
   );
   return (
-    <>
+    <div className="rl-form-group">
       {label && (
         <label>
           {label} {required && <span className="rl-required">*</span>}
@@ -90,7 +90,7 @@ const CheckboxGroup = memo(function CheckboxGroup({
           />
         ))}
       </div>
-    </>
+    </div>
   );
 });
 
