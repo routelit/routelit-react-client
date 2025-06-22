@@ -11,9 +11,9 @@ interface UINavigateEvent {
   replace?: boolean;
 }
 
-function Link({ text, children, id, href, replace, ...props }: LinkProps) {
+function Link({ text, children, id, href, replace, isExternal, ...props }: LinkProps) {
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (props.isExternal) {
+    if (isExternal) {
       return;
     }
     e.preventDefault();

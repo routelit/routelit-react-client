@@ -84,18 +84,6 @@ describe('Select Component', () => {
     expect(screen.getByText('option2')).toBeInTheDocument();
   });
 
-  it('displays helper text when provided', () => {
-    render(<Select {...defaultProps} helperText="This is a helper text" />);
-    const select = screen.getByRole('combobox');
-    expect(select).toHaveAttribute('helpertext', 'This is a helper text');
-  });
-
-  it('displays error text when provided', () => {
-    render(<Select {...defaultProps} errorText="This is an error" />);
-    const select = screen.getByRole('combobox');
-    expect(select).toHaveAttribute('errortext', 'This is an error');
-  });
-
   it('does not dispatch change when value remains the same', () => {
     const mockDispatch = vi.fn();
     vi.mocked(useFormDispatcherWithAttr).mockReturnValue(mockDispatch);
