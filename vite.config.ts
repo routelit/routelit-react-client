@@ -9,7 +9,6 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   const isLibraryBuild = env.BUILD_TARGET === 'lib';
-  const isDebugBuild = env.BUILD_TARGET === 'debug';
   const isProd = mode === 'production';
 
   const baseConfig = {
@@ -67,37 +66,13 @@ export default defineConfig(({ mode }) => {
         'process.env.NODE_ENV': '"development"',
       },
     };
-  } else if (isDebugBuild) {
-    // Debug build configuration (non-optimized Flask integration for debugging)
-    return {
-      ...baseConfig,
-      build: {
-        // Relative path from this file to the Flask static directory
-        outDir: '../routelit/static/dev',
-        emptyOutDir: true,
-        // Generate manifest for Flask to reference assets
-        manifest: true,
-        // Debug-friendly settings
-        minify: false,
-        sourcemap: true,
-        rollupOptions: {
-          // Make the vendor a separate entry
-          input: {
-            app: resolve(__dirname, 'src/main.tsx')
-          },
-        }
-      },
-      define: {
-        'process.env.NODE_ENV': '"development"',
-      },
-    };
   } else {
     // Default build configuration (for Flask integration)
     return {
       ...baseConfig,
       build: {
         // Relative path from this file to the Flask static directory
-        outDir: '../routelit/static/prod',
+        outDir: '../routelit/static',
         emptyOutDir: true,
         // Generate manifest for Flask to reference assets
         manifest: true,
