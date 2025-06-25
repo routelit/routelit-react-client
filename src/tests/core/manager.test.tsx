@@ -10,7 +10,16 @@ vi.mock('../../core/server-api', () => ({
 }));
 
 vi.mock('../../core/actions', () => ({
-  applyActions: vi.fn(),
+  applyActions: vi.fn((draft, actions) => {
+    // Simple mock implementation that actually modifies the draft
+    actions.forEach((action: AddAction) => {
+      if (action.type === 'add') {
+        if (action.address.length === 1) {
+          draft[action.address[0]] = action.element;
+        }
+      }
+    });
+  }),
   prependAddressToActions: vi.fn((resp: ActionsResponse, address: number[]) => ({
     ...resp,
     actions: resp.actions.map(action => ({
@@ -64,16 +73,26 @@ describe('RouteLitManager', () => {
     window.addEventListener = vi.fn();
     window.removeEventListener = vi.fn();
 
-    // Mock sendEvent to resolve with empty actions by default
-    vi.mocked(serverApi.sendEvent).mockResolvedValue({
-      actions: [],
-      target: 'fragment'
+    // Mock sendEvent to resolve with initial data for initialize events, empty for others
+    vi.mocked(serverApi.sendEvent).mockImplementation((event) => {
+      if (event.detail.type === 'initialize') {
+        return Promise.resolve({
+          actions: mockComponentsTree.map((component, index) => ({
+            type: 'add',
+            address: [index],
+            element: component
+          } as AddAction)),
+          target: 'fragment'
+        });
+      }
+      return Promise.resolve({
+        actions: [],
+        target: 'fragment'
+      });
     });
 
-    // Initialize a new manager for each test
-    manager = new RouteLitManager({
-      componentsTree: [...mockComponentsTree]
-    });
+    // Initialize a new manager for each test with empty components tree
+    manager = new RouteLitManager({});
   });
 
   describe('initialization and cleanup', () => {
@@ -88,6 +107,26 @@ describe('RouteLitManager', () => {
       expect(window.addEventListener).toHaveBeenCalledWith(
         'popstate',
         expect.any(Function)
+      );
+    });
+
+    it('should send initialize event and fetch initial data on initialize', async () => {
+      // Wait for the initialize call to complete
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      manager.initialize();
+      
+      // Wait for async operations to complete
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      expect(serverApi.sendEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: expect.objectContaining({
+            type: 'initialize',
+            id: 'browser-navigation'
+          })
+        }),
+        undefined
       );
     });
 
@@ -238,7 +277,11 @@ describe('RouteLitManager', () => {
   });
 
   describe('component tree handling', () => {
-    it('should apply actions to the component tree', () => {
+    it('should apply actions to the component tree', async () => {
+      // Initialize manager to populate components tree
+      manager.initialize();
+      await new Promise(resolve => setTimeout(resolve, 0));
+
       const addAction: AddAction = {
         type: 'add',
         address: [1],
@@ -259,9 +302,13 @@ describe('RouteLitManager', () => {
       expect(applyActionsSpy).toHaveBeenCalled();
     });
 
-    it('should notify listeners when component tree changes', () => {
+    it('should notify listeners when component tree changes', async () => {
       const listener = vi.fn();
       manager.subscribe(listener);
+
+      // Initialize manager to populate components tree
+      manager.initialize();
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       const addAction: AddAction = {
         type: 'add',
@@ -279,26 +326,33 @@ describe('RouteLitManager', () => {
       expect(listener).toHaveBeenCalled();
     });
 
-    it('should access components at a specific address', () => {
-      // Set up mock implementation to return something
-      manager.getAtAddress = vi.fn().mockReturnValue([mockComponentsTree[1].children![0]]);
+    it('should access components at a specific address', async () => {
+      // Initialize manager to populate components tree
+      manager.initialize();
+      await new Promise(resolve => setTimeout(resolve, 0));
 
-      const components = manager.getAtAddress([1, 0]);
-
+      // Test accessing root level component which should exist
+      const components = manager.getAtAddress([1]);
       expect(components).toBeDefined();
+      
+      // Test that we can get the components tree
+      const tree = manager.getComponentsTree();
+      expect(tree).toBeDefined();
+      expect(Array.isArray(tree)).toBe(true);
     });
   });
 
   describe('parent-child fragment relationship', () => {
-    it('should delegate actions to parent manager when in a fragment', () => {
-      const parentManager = new RouteLitManager({
-        componentsTree: [...mockComponentsTree]
-      });
+    it('should delegate actions to parent manager when in a fragment', async () => {
+      const parentManager = new RouteLitManager({});
+      // Initialize parent manager
+      parentManager.initialize();
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       const childManager = new RouteLitManager({
         fragmentId: 'child-fragment',
         parentManager,
-        address: [1, 0]
+        address: [0] // Use a valid address that exists
       });
 
       // Spy on parent manager's applyActions
@@ -320,7 +374,7 @@ describe('RouteLitManager', () => {
       // Verify that prependAddressToActions was called with the correct address
       expect(actions.prependAddressToActions).toHaveBeenCalledWith(
         actionsResponse,
-        [1, 0]
+        [0]
       );
 
       // Check that parent's applyActions was called with the processed actions

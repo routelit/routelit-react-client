@@ -4,12 +4,6 @@ interface LinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   replace?: boolean;
 }
 
-interface UINavigateEvent {
-  id?: string;
-  type: "navigate";
-  href: string;
-  replace?: boolean;
-}
 
 function Link({ text, children, id, href, replace, isExternal, ...props }: LinkProps) {
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -18,7 +12,7 @@ function Link({ text, children, id, href, replace, isExternal, ...props }: LinkP
     }
     e.preventDefault();
     e.stopPropagation();
-    const event = new CustomEvent<UINavigateEvent>("routelit:event", {
+    const event = new CustomEvent<NavigateEventPayload>("routelit:event", {
       detail: {
         id: id!,
         type: "navigate",

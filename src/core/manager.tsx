@@ -17,16 +17,17 @@ export class RouteLitManager {
   private listeners: Array<Handler> = [];
   private isLoadingListeners: Array<IsLoadingHandler> = [];
   private errorListeners: Array<ErrorHandler> = [];
-  private componentsTree?: RouteLitComponent[];
+  private componentsTree: RouteLitComponent[] = [];
   private _isLoading: boolean = false;
   private _error?: Error;
   private fragmentId?: string;
   private parentManager?: RouteLitManager;
   private address?: number[];
   private lastURL?: string;
+  private initialized: boolean = false;
 
   constructor(props: RouteLitManagerProps) {
-    this.componentsTree = props.componentsTree;
+    this.componentsTree = props.componentsTree ?? [];
     this.fragmentId = props.fragmentId;
     this.parentManager = props.parentManager;
     this.address = props.address;
@@ -79,14 +80,30 @@ export class RouteLitManager {
       return;
     }
     if (actionsResp.actions.length === 0) return;
-    const componentsTreeCopy = produce(this.componentsTree!, (draft) => {
+    const componentsTreeCopy = produce(this.componentsTree, (draft) => {
       applyActions(draft, actionsResp.actions);
     });
     this.componentsTree = componentsTreeCopy;
     if (shouldNotify) this.notifyListeners();
   };
 
+  private initializeDOM = () => {
+    if (this.initialized) return;
+    const initializeEvent = new CustomEvent<InitializeEventPayload>(
+      "routelit:event",
+      {
+        detail: {
+          id: "browser-navigation",
+          type: "initialize",
+        },
+      }
+    );
+    this.handleEvent(initializeEvent);
+    this.initialized = true;
+  };
+
   initialize = () => {
+    this.initializeDOM();
     document.addEventListener(
       "routelit:event",
       this.handleEvent as unknown as EventListener
@@ -125,7 +142,7 @@ export class RouteLitManager {
     if (this.address) {
       return this.parentManager?.getAtAddress(this.address) ?? [];
     }
-    return this.componentsTree!;
+    return this.componentsTree;
   };
 
   isLoading = (): boolean => {
@@ -145,7 +162,7 @@ export class RouteLitManager {
       this.componentsTree as RouteLitComponent[] | RouteLitComponent
     );
     if (!component) throw new Error("Component not found");
-    // @ts-ignore
+    // @ts-expect-error - component can be either array or have children property
     return Array.isArray(component) ? component : component.children;
   };
 
