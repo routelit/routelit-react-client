@@ -13,9 +13,12 @@ export function useFormId(): string | undefined {
 }
 
 function Form({ id, children }: FormProps) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+  }
   return (
     <FormContext.Provider value={{ id }}>
-      <form id={id} data-testid={id}>{children}</form>
+      <form id={id} data-testid={id} onSubmit={handleSubmit}>{children}</form>
     </FormContext.Provider>
   );
 }

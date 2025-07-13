@@ -1,6 +1,6 @@
 import { produce } from "immer";
 import { applyActions, prependAddressToActions } from "./actions";
-import { sendEvent } from "./server-api";
+import { sendEventStream } from "./server-api";
 
 type Handler = (args: RouteLitComponent[]) => void;
 type IsLoadingHandler = (args: boolean) => void;
@@ -12,6 +12,9 @@ interface RouteLitManagerProps {
   parentManager?: RouteLitManager;
   address?: number[];
 }
+
+const EMPTY_ARRAY: RouteLitComponent[] = [];
+const THROTTLE_DELAY = 125; // 0.125 seconds
 
 export class RouteLitManager {
   private listeners: Array<Handler> = [];
@@ -25,6 +28,11 @@ export class RouteLitManager {
   private address?: number[];
   private lastURL?: string;
   private initialized: boolean = false;
+  private abortController?: AbortController;
+  private actionAccumulator: Action[] = [];
+  private currentTarget?: string;
+  private throttleTimer?: NodeJS.Timeout;
+  private lastExecutionTime: number = 0;
 
   constructor(props: RouteLitManagerProps) {
     this.componentsTree = props.componentsTree ?? [];
@@ -39,11 +47,19 @@ export class RouteLitManager {
   };
 
   handleEvent = async (e: CustomEvent<UIEventPayload>) => {
-    if (e.detail.type === "navigate" && this.fragmentId)
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+    this.abortController = new AbortController();
+
+    if (e.detail.type === "navigate" && this.fragmentId) {
       // Let the upper manager handle the navigation
       return;
+    }
+
     if (e.detail.type === "navigate") {
       const detail = e.detail as NavigateEventPayload;
+      detail.lastURL = this.lastURL;
       this.lastURL = detail.href.startsWith("http")
         ? detail.href
         : window.location.origin + detail.href;
@@ -52,8 +68,19 @@ export class RouteLitManager {
     this._isLoading = true;
     this.notifyIsLoading();
     try {
-      const response = await sendEvent(e, this.fragmentId);
-      this.applyActions(response);
+      this.abortController = new AbortController();
+      const responseStream = sendEventStream(
+        e,
+        this.fragmentId,
+        this.abortController
+      );
+      for await (const response of responseStream) {
+        if ("type" in response) {
+          this.batchAction(response);
+        } else {
+          this.applyActions(response);
+        }
+      }
     } catch (error) {
       this.handleError(error as Error);
     } finally {
@@ -67,6 +94,69 @@ export class RouteLitManager {
     this._error = e;
     this.notifyError();
   };
+
+  batchAction = (action: Action, shouldNotify = true) => {
+    // For app-level actions in fragments, delegate immediately to parent
+    if (this.fragmentId && action.target === "app") {
+      this.parentManager?.batchAction(action, shouldNotify);
+      return;
+    }
+    
+    // Create a key for grouping actions by target
+    const targetKey = action.target || "fragment";
+    
+    // If this is a new target, flush current actions first
+    if (this.currentTarget && this.currentTarget !== targetKey) {
+      this.flushActions(shouldNotify);
+    }
+    
+    // Set the current target
+    this.currentTarget = targetKey;
+    
+    // Add action to accumulator
+    this.actionAccumulator.push(action);
+    
+    const now = Date.now();
+    
+    // If enough time has passed since last execution, execute immediately
+    if (now - this.lastExecutionTime >= THROTTLE_DELAY) {
+      this.flushActions(shouldNotify);
+    } else {
+      // If a timer is already set, don't set another one
+      if (!this.throttleTimer) {
+        const remainingTime = THROTTLE_DELAY - (now - this.lastExecutionTime);
+        this.throttleTimer = setTimeout(() => {
+          this.flushActions(shouldNotify);
+        }, remainingTime);
+      }
+    }
+  };
+
+  private flushActions = (shouldNotify: boolean) => {
+    if (this.actionAccumulator.length === 0 || !this.currentTarget) return;
+    
+    // Clear the timer
+    if (this.throttleTimer) {
+      clearTimeout(this.throttleTimer);
+      this.throttleTimer = undefined;
+    }
+    
+    // Record the execution time
+    this.lastExecutionTime = Date.now();
+    
+    // Create ActionsResponse and call applyActions
+    const actionsResponse: ActionsResponse = {
+      actions: [...this.actionAccumulator],
+      target: this.currentTarget as "app" | "fragment"
+    };
+    
+    // Clear the accumulator
+    this.actionAccumulator = [];
+    this.currentTarget = undefined;
+    
+    this.applyActions(actionsResponse, shouldNotify);
+  };
+
 
   applyActions = (actionsResp: ActionsResponse, shouldNotify = true) => {
     if (this.fragmentId) {
@@ -128,6 +218,21 @@ export class RouteLitManager {
   };
 
   terminate = () => {
+    // Flush any pending actions before terminating
+    if (this.actionAccumulator.length > 0) {
+      this.flushActions(true);
+    }
+    
+    // Clear the timer
+    if (this.throttleTimer) {
+      clearTimeout(this.throttleTimer);
+      this.throttleTimer = undefined;
+    }
+    
+    // Clear the accumulator
+    this.actionAccumulator = [];
+    this.currentTarget = undefined;
+    
     document.removeEventListener(
       "routelit:event",
       this.handleEvent as unknown as EventListener
@@ -140,9 +245,9 @@ export class RouteLitManager {
 
   getComponentsTree = (): RouteLitComponent[] => {
     if (this.address) {
-      return this.parentManager?.getAtAddress(this.address) ?? [];
+      return this.parentManager?.getAtAddress(this.address) ?? EMPTY_ARRAY;
     }
-    return this.componentsTree;
+    return this.componentsTree ?? EMPTY_ARRAY;
   };
 
   isLoading = (): boolean => {
@@ -162,8 +267,7 @@ export class RouteLitManager {
       this.componentsTree as RouteLitComponent[] | RouteLitComponent
     );
     if (!component) throw new Error("Component not found");
-    // @ts-expect-error - component can be either array or have children property
-    return Array.isArray(component) ? component : component.children;
+    return Array.isArray(component) ? component : component.children!;
   };
 
   subscribe = (listener: Handler): (() => void) => {

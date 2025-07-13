@@ -1,17 +1,17 @@
 import { memo, useRef } from "react";
-import { useFormDispatcherWithAttr, useIsLoading } from "../core/context";
+import { useFormDispatcherWithAttr } from "../core/context";
 
 function TextInputComponent({
   id,
   label,
   value,
   type = "text",
+  children: _,
   ...props
 }: {
   id: string;
   label?: string;
 } & React.InputHTMLAttributes<HTMLInputElement>) {
-  const isLoading = useIsLoading();
   const dispatchChange = useFormDispatcherWithAttr(id, "change", "value");
   const lastValueRef = useRef(value);
 
@@ -40,7 +40,6 @@ function TextInputComponent({
         type={type}
         id={id}
         {...props}
-        disabled={isLoading || props.disabled}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         defaultValue={value}

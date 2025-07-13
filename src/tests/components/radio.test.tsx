@@ -11,14 +11,14 @@ vi.mock('../../core/context', () => ({
 
 describe('RadioGroup Component', () => {
   const defaultProps = {
-    id: 'test-radio',
+    id: 'test-radio-group',
     label: 'Test Radio Group',
-    value: 'option1',
     options: [
-      { label: 'Option 1', value: 'option1' },
-      { label: 'Option 2', value: 'option2', caption: 'Description for option 2' },
-      'option3', // Simple string option
+      { value: 'option1', label: 'Option 1' },
+      { value: 'option2', label: 'Option 2' },
+      { value: 'option3', label: 'Option 3' }
     ],
+    value: 'option1'
   };
 
   beforeEach(() => {
@@ -40,11 +40,19 @@ describe('RadioGroup Component', () => {
     render(<RadioGroup {...defaultProps} />);
     expect(screen.getByLabelText('Option 1')).toBeInTheDocument();
     expect(screen.getByLabelText('Option 2')).toBeInTheDocument();
-    expect(screen.getByLabelText('option3')).toBeInTheDocument();
+    expect(screen.getByLabelText('Option 3')).toBeInTheDocument();
   });
 
   it('displays caption when provided', () => {
-    render(<RadioGroup {...defaultProps} />);
+    const propsWithCaption = {
+      ...defaultProps,
+      options: [
+        { value: 'option1', label: 'Option 1' },
+        { value: 'option2', label: 'Option 2', caption: 'Description for option 2' },
+        { value: 'option3', label: 'Option 3' }
+      ]
+    };
+    render(<RadioGroup {...propsWithCaption} />);
     expect(screen.getByText('Description for option 2')).toBeInTheDocument();
   });
 
@@ -53,9 +61,10 @@ describe('RadioGroup Component', () => {
     vi.mocked(useFormDispatcherWithAttr).mockReturnValue(mockDispatch);
 
     render(<RadioGroup {...defaultProps} />);
-    const option2 = screen.getByLabelText('Option 2');
+    const option2 = screen.getByLabelText('Option 2') as HTMLInputElement;
     
     fireEvent.click(option2);
+    
     expect(mockDispatch).toHaveBeenCalledWith('option2');
   });
 
@@ -66,29 +75,28 @@ describe('RadioGroup Component', () => {
   });
 
   it('handles disabled state correctly', () => {
-    const options = [
-      { label: 'Option 1', value: 'option1' },
-      { label: 'Option 2', value: 'option2', disabled: true },
-    ];
-    
-    render(<RadioGroup {...defaultProps} options={options} />);
+    const propsWithDisabled = {
+      ...defaultProps,
+      options: [
+        { value: 'option1', label: 'Option 1' },
+        { value: 'option2', label: 'Option 2', disabled: true },
+        { value: 'option3', label: 'Option 3' }
+      ]
+    };
+    render(<RadioGroup {...propsWithDisabled} />);
     const option2 = screen.getByLabelText('Option 2') as HTMLInputElement;
     expect(option2.disabled).toBe(true);
   });
 
-  it('handles loading state correctly', () => {
-    vi.mocked(useIsLoading).mockReturnValue(true);
-    
-    render(<RadioGroup {...defaultProps} />);
-    const option1 = screen.getByLabelText('Option 1') as HTMLInputElement;
-    expect(option1.disabled).toBe(true);
-  });
-
   it('handles simple string options correctly', () => {
-    const options = ['option1', 'option2'];
-    render(<RadioGroup {...defaultProps} options={options} />);
-    
+    const simpleProps = {
+      ...defaultProps,
+      options: ['option1', 'option2', 'option3']
+    };
+
+    render(<RadioGroup {...simpleProps} />);
     expect(screen.getByLabelText('option1')).toBeInTheDocument();
     expect(screen.getByLabelText('option2')).toBeInTheDocument();
+    expect(screen.getByLabelText('option3')).toBeInTheDocument();
   });
 }); 

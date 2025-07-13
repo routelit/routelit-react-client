@@ -1,5 +1,5 @@
 import { memo, useCallback } from "react";
-import { useFormDispatcherWithAttr, useIsLoading } from "../core/context";
+import { useFormDispatcherWithAttr } from "../core/context";
 
 type CheckboxGroupProps = {
   id: string;
@@ -23,9 +23,8 @@ function CheckboxGroupOption(props: {
   id: string;
   value: string[];
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  isLoading: boolean;
 }) {
-  const { id, value, onChange, isLoading } = props;
+  const { id, value, onChange } = props;
 
   const option: CheckboxGroupProps["options"][number] =
     typeof props.option === "string"
@@ -35,7 +34,7 @@ function CheckboxGroupOption(props: {
   return (
     <div key={option.value} className="rl-form-flex-control">
       <input
-        disabled={isLoading || option.disabled}
+        disabled={option.disabled}
         type="checkbox"
         value={option.value}
         id={`${id}-${option.value}`}
@@ -61,7 +60,6 @@ const CheckboxGroup = memo(function CheckboxGroup({
   flexDirection = "col",
 }: CheckboxGroupProps) {
   const dispatchChange = useFormDispatcherWithAttr(id, "change", "value");
-  const isLoading = useIsLoading();
   const onChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = e.target.checked
@@ -85,7 +83,6 @@ const CheckboxGroup = memo(function CheckboxGroup({
             id={id}
             value={value}
             onChange={onChange}
-            isLoading={isLoading}
             option={option}
           />
         ))}

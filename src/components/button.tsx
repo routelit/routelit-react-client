@@ -1,5 +1,5 @@
 import { memo, useCallback } from "react";
-import { useFormDispatcher, useIsLoading } from "../core/context";
+import { useFormDispatcher } from "../core/context";
 
 const Button = memo(function Button({
   text,
@@ -12,18 +12,9 @@ const Button = memo(function Button({
   eventName?: string;
 } & React.HTMLAttributes<HTMLButtonElement>) {
   const dispatch = useFormDispatcher(id, eventName);
-  const isLoading = useIsLoading();
-  const handleClick = useCallback(() => {
-    dispatch({});
-  }, [dispatch]);
+  const handleClick = useCallback(() => dispatch({}), [dispatch]);
   return (
-    <button
-      id={id}
-      type="button"
-      disabled={isLoading}
-      {...props}
-      onClick={handleClick}
-    >
+    <button id={id} type="button" {...props} onClick={handleClick}>
       {text}
     </button>
   );

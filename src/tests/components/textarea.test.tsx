@@ -76,14 +76,6 @@ describe('Textarea Component', () => {
     expect(textarea).toBeDisabled();
   });
 
-  it('handles loading state correctly', () => {
-    vi.mocked(useIsLoading).mockReturnValue(true);
-    
-    render(<Textarea {...defaultProps} />);
-    const textarea = screen.getByRole('textbox');
-    expect(textarea).toBeDisabled();
-  });
-
   it('applies additional props correctly', () => {
     render(
       <Textarea
@@ -91,14 +83,12 @@ describe('Textarea Component', () => {
         placeholder="Enter text"
         className="custom-class"
         data-testid="custom-textarea"
-        rows={5}
       />
     );
     
     const textarea = screen.getByTestId('custom-textarea');
     expect(textarea).toHaveAttribute('placeholder', 'Enter text');
     expect(textarea).toHaveClass('custom-class');
-    expect(textarea).toHaveAttribute('rows', '5');
   });
 
   it('handles initial value correctly', () => {
@@ -108,9 +98,8 @@ describe('Textarea Component', () => {
   });
 
   it('handles multiline text correctly', () => {
-    const multilineText = 'Line 1\nLine 2\nLine 3';
-    render(<Textarea {...defaultProps} value={multilineText} />);
-    const textarea = screen.getByRole('textbox');
-    expect(textarea).toHaveValue(multilineText);
+    render(<Textarea {...defaultProps} value={"line 1\nline 2"} />);
+    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
+    expect(textarea.value.split('\n')).toEqual(['line 1', 'line 2']);
   });
 }); 

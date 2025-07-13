@@ -1,18 +1,18 @@
 import { memo, useCallback } from "react";
-import { useFormDispatcherWithAttr, useIsLoading } from "../core/context";
+import { useFormDispatcherWithAttr } from "../core/context";
 
 const Checkbox = memo(function Checkbox({
   label,
   checked,
   id,
   required,
+  children: _,
   ...props
-}: { label: string; checked: boolean; required?: boolean } & Omit<
+}: { label: string; checked: boolean; required?: boolean; caption?: string } & Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   "onChange"
 >) {
   const dispatchChange = useFormDispatcherWithAttr(id!, "change", "checked");
-  const isLoading = useIsLoading();
   const onChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       dispatchChange(e.target.checked);
@@ -23,7 +23,6 @@ const Checkbox = memo(function Checkbox({
     <div className="rl-form-flex-control">
       <input
         {...props}
-        disabled={isLoading || props.disabled}
         type="checkbox"
         id={id}
         checked={checked}

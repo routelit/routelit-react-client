@@ -76,14 +76,6 @@ describe('TextInput Component', () => {
     expect(input).toBeDisabled();
   });
 
-  it('handles loading state correctly', () => {
-    vi.mocked(useIsLoading).mockReturnValue(true);
-    
-    render(<TextInput {...defaultProps} />);
-    const input = screen.getByRole('textbox');
-    expect(input).toBeDisabled();
-  });
-
   it('handles different input types', () => {
     render(<TextInput {...defaultProps} type="email" />);
     const input = screen.getByRole('textbox');

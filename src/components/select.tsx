@@ -1,5 +1,5 @@
 import { memo, useRef } from "react";
-import { useFormDispatcherWithAttr, useIsLoading } from "../core/context";
+import { useFormDispatcherWithAttr } from "../core/context";
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
@@ -30,9 +30,9 @@ const Select = memo(function Select({
   required,
   value,
   options,
+  children: _,
   ...props
 }: SelectProps) {
-  const isLoading = useIsLoading();
   const dispatchChange = useFormDispatcherWithAttr(id, "change", "value");
   const lastValueRef = useRef(value);
 
@@ -54,10 +54,9 @@ const Select = memo(function Select({
       <select
         id={id}
         value={value}
-        onChange={handleChange}
         {...props}
-        disabled={isLoading}
         required={required}
+        onChange={handleChange}
       >
         {options.map((option) => (
           <SelectOption

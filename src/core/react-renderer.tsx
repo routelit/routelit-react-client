@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { type RouteLitManager } from "./manager";
 import { type ComponentStore } from "./component-store";
 import Fragment from "../components/fragment";
@@ -8,35 +8,62 @@ interface Props {
   componentStore: ComponentStore;
 }
 
+function getElement(
+  name: string,
+  key: string,
+  address: number[] | undefined,
+  props: Record<string, unknown>,
+  children: RouteLitComponent[] | undefined,
+  componentStore: ComponentStore
+): React.ReactNode {
+  if (name === "fragment") {
+    return (
+      <Fragment key={key as string} id={props.id as string} address={address} />
+    );
+  }
+  const Component = componentStore.get(name);
+  if (!Component) return null;
+  return (
+    <Component id={key} key={key} {...props}>
+      {children?.map(renderComponentTree(componentStore))}
+    </Component>
+  );
+}
+
+function FinalComponent({
+  c,
+  componentStore,
+}: {
+  c: RouteLitComponent;
+  componentStore: ComponentStore;
+}): React.ReactNode {
+  const element = useMemo(
+    () =>
+      getElement(c.name, c.key, c.address, c.props, c.children, componentStore),
+    [c.name, c.key, c.address, c.props, c.children, componentStore]
+  );
+  const className = c.stale ? "rl-component rl-stale" : "rl-component";
+  return <div className={className}>{element}</div>;
+}
+
+const renderComponentTree =
+  (componentStore: ComponentStore) =>
+  (c: RouteLitComponent): React.ReactNode => {
+    return <FinalComponent key={c.key} c={c} componentStore={componentStore} />;
+  };
+
 function ReactRenderer({ manager, componentStore }: Props) {
   const componentsTree = useSyncExternalStore(
     manager.subscribe,
     manager.getComponentsTree
   );
-  // @ts-ignore
-  const _componentStoreVersion = useSyncExternalStore(
-    componentStore.subscribe,
-    componentStore.getVersion
-  );
-  const renderComponentTree = (c: RouteLitComponent): React.ReactNode => {
-    const Component = componentStore.get(c.name);
-    if (!Component) return null;
-    if (c.name === "fragment") {
-      const { id, ...props } = c.props;
-      return (
-        <Fragment key={c.key} id={id as string} address={c.address} {...props} />
-      );
-    }
-
-    return (
-      <Component key={c.key} id={c.key} {...c.props}>
-        {c.children?.map(renderComponentTree)}
-      </Component>
-    );
-  };
+  useSyncExternalStore(componentStore.subscribe, componentStore.getVersion);
+  if (!componentsTree?.length) {
+    return null;
+  }
   return (
     <div className="rl-container">
-      {componentsTree.map(renderComponentTree)}
+      {componentsTree?.map(renderComponentTree(componentStore))}
     </div>
   );
 }

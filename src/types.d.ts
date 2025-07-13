@@ -7,9 +7,16 @@ interface RouteLitComponent {
   props: Record<string, unknown>;
   children?: RouteLitComponent[];
   address?: number[];
+  stale?: boolean;
 }
 
-type ActionType = "add" | "remove" | "update";
+type ActionType =
+  | "add"
+  | "remove"
+  | "update"
+  | "set"
+  | "fresh_boundary"
+  | "last";
 
 interface Action {
   type: string;
@@ -18,10 +25,16 @@ interface Action {
    * from the root to the target element.
    */
   address: number[];
+  target?: "app" | "fragment";
 }
 
 interface AddAction extends Action {
   type: "add";
+  element: RouteLitComponent;
+}
+
+interface SetAction extends Action {
+  type: "set";
   element: RouteLitComponent;
 }
 
@@ -32,6 +45,18 @@ interface RemoveAction extends Action {
 interface UpdateAction extends Action {
   type: "update";
   props: Record<string, unknown>;
+}
+
+interface FreshBoundaryAction extends Action {
+  type: "fresh_boundary";
+}
+
+interface LastAction extends Action {
+  type: "last";
+}
+
+interface NoChangeAction extends Action {
+  type: "no_change";
 }
 
 interface ActionsResponse {

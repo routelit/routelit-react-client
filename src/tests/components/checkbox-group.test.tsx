@@ -13,12 +13,12 @@ describe('CheckboxGroup Component', () => {
   const defaultProps = {
     id: 'test-checkbox-group',
     label: 'Test Checkbox Group',
-    value: ['option1'],
     options: [
-      { label: 'Option 1', value: 'option1' },
-      { label: 'Option 2', value: 'option2', caption: 'Description for option 2' },
-      'option3', // Simple string option
+      { value: 'option1', label: 'Option 1' },
+      { value: 'option2', label: 'Option 2' },
+      { value: 'option3', label: 'Option 3' }
     ],
+    value: ['option1']
   };
 
   beforeEach(() => {
@@ -40,11 +40,19 @@ describe('CheckboxGroup Component', () => {
     render(<CheckboxGroup {...defaultProps} />);
     expect(screen.getByLabelText('Option 1')).toBeInTheDocument();
     expect(screen.getByLabelText('Option 2')).toBeInTheDocument();
-    expect(screen.getByLabelText('option3')).toBeInTheDocument();
+    expect(screen.getByLabelText('Option 3')).toBeInTheDocument();
   });
 
   it('displays caption when provided', () => {
-    render(<CheckboxGroup {...defaultProps} />);
+    const propsWithCaption = {
+      ...defaultProps,
+      options: [
+        { value: 'option1', label: 'Option 1' },
+        { value: 'option2', label: 'Option 2', caption: 'Description for option 2' },
+        { value: 'option3', label: 'Option 3' }
+      ]
+    };
+    render(<CheckboxGroup {...propsWithCaption} />);
     expect(screen.getByText('Description for option 2')).toBeInTheDocument();
   });
 
@@ -53,9 +61,10 @@ describe('CheckboxGroup Component', () => {
     vi.mocked(useFormDispatcherWithAttr).mockReturnValue(mockDispatch);
 
     render(<CheckboxGroup {...defaultProps} />);
-    const option2 = screen.getByLabelText('Option 2');
+    const option2 = screen.getByLabelText('Option 2') as HTMLInputElement;
     
     fireEvent.click(option2);
+    
     expect(mockDispatch).toHaveBeenCalledWith(['option1', 'option2']);
   });
 
@@ -64,9 +73,10 @@ describe('CheckboxGroup Component', () => {
     vi.mocked(useFormDispatcherWithAttr).mockReturnValue(mockDispatch);
 
     render(<CheckboxGroup {...defaultProps} />);
-    const option1 = screen.getByLabelText('Option 1');
+    const option1 = screen.getByLabelText('Option 1') as HTMLInputElement;
     
     fireEvent.click(option1);
+    
     expect(mockDispatch).toHaveBeenCalledWith([]);
   });
 
@@ -77,35 +87,37 @@ describe('CheckboxGroup Component', () => {
   });
 
   it('handles disabled state correctly', () => {
-    const options = [
-      { label: 'Option 1', value: 'option1' },
-      { label: 'Option 2', value: 'option2', disabled: true },
-    ];
-    
-    render(<CheckboxGroup {...defaultProps} options={options} />);
+    const propsWithDisabled = {
+      ...defaultProps,
+      options: [
+        { value: 'option1', label: 'Option 1' },
+        { value: 'option2', label: 'Option 2', disabled: true },
+        { value: 'option3', label: 'Option 3' }
+      ]
+    };
+    render(<CheckboxGroup {...propsWithDisabled} />);
     const option2 = screen.getByLabelText('Option 2') as HTMLInputElement;
     expect(option2.disabled).toBe(true);
   });
 
-  it('handles loading state correctly', () => {
-    vi.mocked(useIsLoading).mockReturnValue(true);
-    
-    render(<CheckboxGroup {...defaultProps} />);
-    const option1 = screen.getByLabelText('Option 1') as HTMLInputElement;
-    expect(option1.disabled).toBe(true);
-  });
-
   it('handles simple string options correctly', () => {
-    const options = ['option1', 'option2'];
-    render(<CheckboxGroup {...defaultProps} options={options} />);
-    
+    const simpleProps = {
+      ...defaultProps,
+      options: ['option1', 'option2', 'option3']
+    };
+
+    render(<CheckboxGroup {...simpleProps} />);
     expect(screen.getByLabelText('option1')).toBeInTheDocument();
     expect(screen.getByLabelText('option2')).toBeInTheDocument();
+    expect(screen.getByLabelText('option3')).toBeInTheDocument();
   });
 
   it('maintains checked state for selected options', () => {
-    render(<CheckboxGroup {...defaultProps} />);
+    render(<CheckboxGroup {...defaultProps} value={['option1', 'option3']} />);
     const option1 = screen.getByLabelText('Option 1') as HTMLInputElement;
+    const option3 = screen.getByLabelText('Option 3') as HTMLInputElement;
+    
     expect(option1.checked).toBe(true);
+    expect(option3.checked).toBe(true);
   });
 }); 

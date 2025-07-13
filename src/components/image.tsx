@@ -4,7 +4,7 @@ interface ImageProps extends React.HTMLAttributes<HTMLImageElement> {
   alt: string;
 }
 
-function Image({ src, alt, ...props }: ImageProps) {
+function Image({ src, alt, children: _, ...props }: ImageProps) {
   return <img src={src} alt={alt} {...props} />;
 }
 

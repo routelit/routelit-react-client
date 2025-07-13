@@ -1,5 +1,5 @@
 import { memo, useRef } from "react";
-import { useFormDispatcherWithAttr, useIsLoading } from "../core/context";
+import { useFormDispatcherWithAttr } from "../core/context";
 
 function TextareaComponent({
   id,
@@ -10,7 +10,6 @@ function TextareaComponent({
   id: string;
   label?: string;
 } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  const isLoading = useIsLoading();
   const dispatchChange = useFormDispatcherWithAttr(id, "change", "value");
   const lastValueRef = useRef(value);
 
@@ -38,7 +37,6 @@ function TextareaComponent({
       <textarea
         id={id}
         {...props}
-        disabled={isLoading || props.disabled}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         defaultValue={value}

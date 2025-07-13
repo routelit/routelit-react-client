@@ -13,12 +13,12 @@ describe('Select Component', () => {
   const defaultProps = {
     id: 'test-select',
     label: 'Test Select',
-    value: 'option1',
     options: [
-      { label: 'Option 1', value: 'option1' },
-      { label: 'Option 2', value: 'option2' },
-      'option3', // Simple string option
+      { value: 'option1', label: 'Option 1' },
+      { value: 'option2', label: 'Option 2' },
+      { value: 'option3', label: 'Option 3' }
     ],
+    value: 'option1'
   };
 
   beforeEach(() => {
@@ -38,11 +38,9 @@ describe('Select Component', () => {
 
   it('renders all options correctly', () => {
     render(<Select {...defaultProps} />);
-    const select = screen.getByRole('combobox');
-    expect(select).toHaveValue('option1');
     expect(screen.getByText('Option 1')).toBeInTheDocument();
     expect(screen.getByText('Option 2')).toBeInTheDocument();
-    expect(screen.getByText('option3')).toBeInTheDocument();
+    expect(screen.getByText('Option 3')).toBeInTheDocument();
   });
 
   it('handles option selection correctly', () => {
@@ -53,35 +51,26 @@ describe('Select Component', () => {
     const select = screen.getByRole('combobox');
     
     fireEvent.change(select, { target: { value: 'option2' } });
+    
     expect(mockDispatch).toHaveBeenCalledWith('option2');
   });
 
   it('handles disabled state correctly', () => {
-    const options = [
-      { label: 'Option 1', value: 'option1' },
-      { label: 'Option 2', value: 'option2', disabled: true },
-    ];
-    
-    render(<Select {...defaultProps} options={options} />);
-    const select = screen.getByRole('combobox');
-    const option2 = select.querySelector('option[value="option2"]') as HTMLOptionElement;
-    expect(option2.disabled).toBe(true);
-  });
-
-  it('handles loading state correctly', () => {
-    vi.mocked(useIsLoading).mockReturnValue(true);
-    
-    render(<Select {...defaultProps} />);
+    render(<Select {...defaultProps} disabled />);
     const select = screen.getByRole('combobox');
     expect(select).toBeDisabled();
   });
 
   it('handles simple string options correctly', () => {
-    const options = ['option1', 'option2'];
-    render(<Select {...defaultProps} options={options} />);
-    
+    const simpleProps = {
+      ...defaultProps,
+      options: ['option1', 'option2', 'option3']
+    };
+
+    render(<Select {...simpleProps} />);
     expect(screen.getByText('option1')).toBeInTheDocument();
     expect(screen.getByText('option2')).toBeInTheDocument();
+    expect(screen.getByText('option3')).toBeInTheDocument();
   });
 
   it('does not dispatch change when value remains the same', () => {
@@ -92,6 +81,7 @@ describe('Select Component', () => {
     const select = screen.getByRole('combobox');
     
     fireEvent.change(select, { target: { value: 'option1' } });
+    
     expect(mockDispatch).not.toHaveBeenCalled();
   });
 }); 

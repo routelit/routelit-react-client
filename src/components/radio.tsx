@@ -1,5 +1,5 @@
 import { memo, useCallback } from "react";
-import { useFormDispatcherWithAttr, useIsLoading } from "../core/context";
+import { useFormDispatcherWithAttr } from "../core/context";
 
 type RadioGroupProps = {
   id: string;
@@ -23,9 +23,8 @@ function RadioGroupOption(props: {
   id: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  isLoading: boolean;
 }) {
-  const { id, value, onChange, isLoading } = props;
+  const { id, value, onChange } = props;
 
   const option: RadioGroupProps["options"][number] =
     typeof props.option === "string"
@@ -35,7 +34,7 @@ function RadioGroupOption(props: {
   return (
     <div className="rl-form-flex-control">
       <input
-        disabled={isLoading || option.disabled}
+        disabled={option.disabled}
         type="radio"
         value={option.value}
         id={`${id}-${option.value}`}
@@ -61,7 +60,6 @@ const RadioGroup = memo(function RadioGroup({
   flexDirection = "col",
 }: RadioGroupProps) {
   const dispatchChange = useFormDispatcherWithAttr(id, "change", "value");
-  const isLoading = useIsLoading();
   const onChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       dispatchChange(e.target.value);
@@ -82,7 +80,6 @@ const RadioGroup = memo(function RadioGroup({
             id={id}
             value={value}
             onChange={onChange}
-            isLoading={isLoading}
             option={option}
           />
         ))}
