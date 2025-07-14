@@ -342,7 +342,7 @@ describe('RouteLitManager', () => {
 
       // Mock sendEventStream to track abort controller calls
       const abortControllers: AbortController[] = [];
-      vi.mocked(serverApi.sendEventStream).mockImplementation((event, fragmentId, abortController) => {
+      vi.mocked(serverApi.sendEventStream).mockImplementation((_event, _fragmentId, abortController) => {
         abortControllers.push(abortController);
         return createAsyncGenerator([{ actions: [], target: 'fragment' as const }]);
       });

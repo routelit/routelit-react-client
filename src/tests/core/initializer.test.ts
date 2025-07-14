@@ -19,7 +19,8 @@ describe('initManager', () => {
     
     // Mock getElementById
     mockGetElementById = vi.fn();
-    document.getElementById = mockGetElementById;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (document.getElementById as any) = mockGetElementById;
   });
 
   afterEach(() => {
@@ -102,7 +103,7 @@ describe('initManager', () => {
   });
 
   it('handles empty components tree', () => {
-    const emptyComponentsTree: any[] = [];
+    const emptyComponentsTree: unknown[] = [];
 
     const mockElement = {
       value: JSON.stringify(emptyComponentsTree),
