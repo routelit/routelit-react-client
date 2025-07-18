@@ -3,15 +3,14 @@ import { useFormDispatcherWithAttr } from "../core/context";
 
 const Checkbox = memo(function Checkbox({
   label,
-  checked,
   id,
   required,
-  children: _,
+  defaultChecked,
   ...props
-}: { label: string; checked: boolean; required?: boolean; caption?: string } & Omit<
-  React.InputHTMLAttributes<HTMLInputElement>,
-  "onChange"
->) {
+}: {
+  label: string;
+  caption?: string;
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange">) {
   const dispatchChange = useFormDispatcherWithAttr(id!, "change", "checked");
   const onChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -25,7 +24,7 @@ const Checkbox = memo(function Checkbox({
         {...props}
         type="checkbox"
         id={id}
-        checked={checked}
+        defaultChecked={defaultChecked}
         onChange={onChange}
         required={required}
       />

@@ -13,7 +13,7 @@ describe('Textarea Component', () => {
   const defaultProps = {
     id: 'test-textarea',
     label: 'Test Textarea',
-    value: 'initial value',
+    defaultValue: 'initial value',
   };
 
   beforeEach(() => {
@@ -38,7 +38,7 @@ describe('Textarea Component', () => {
     render(<Textarea {...defaultProps} />);
     const textarea = screen.getByRole('textbox');
     
-    fireEvent.change(textarea, { target: { value: 'new value' } });
+    fireEvent.input(textarea, { target: { value: 'new value' } });
     fireEvent.blur(textarea);
     
     expect(mockDispatch).toHaveBeenCalledWith('new value');
@@ -51,7 +51,7 @@ describe('Textarea Component', () => {
     render(<Textarea {...defaultProps} />);
     const textarea = screen.getByRole('textbox');
     
-    fireEvent.change(textarea, { target: { value: 'new value' } });
+    fireEvent.input(textarea, { target: { value: 'new value' } });
     fireEvent.keyDown(textarea, { key: 'Enter' });
     
     expect(mockDispatch).toHaveBeenCalledWith('new value');
@@ -61,10 +61,10 @@ describe('Textarea Component', () => {
     const mockDispatch = vi.fn();
     vi.mocked(useFormDispatcherWithAttr).mockReturnValue(mockDispatch);
 
-    render(<Textarea {...defaultProps} value="test value" />);
+    render(<Textarea {...defaultProps} defaultValue="test value" />);
     const textarea = screen.getByRole('textbox');
     
-    fireEvent.change(textarea, { target: { value: 'test value' } });
+    fireEvent.input(textarea, { target: { value: 'test value' } });
     fireEvent.blur(textarea);
     
     expect(mockDispatch).not.toHaveBeenCalled();
@@ -92,14 +92,15 @@ describe('Textarea Component', () => {
   });
 
   it('handles initial value correctly', () => {
-    render(<Textarea {...defaultProps} value="initial value" />);
+    render(<Textarea {...defaultProps} defaultValue="initial value" />);
     const textarea = screen.getByRole('textbox');
     expect(textarea).toHaveValue('initial value');
   });
 
   it('handles multiline text correctly', () => {
-    render(<Textarea {...defaultProps} value={"line 1\nline 2"} />);
-    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
-    expect(textarea.value.split('\n')).toEqual(['line 1', 'line 2']);
+    const multilineText = 'Line 1\nLine 2\nLine 3';
+    render(<Textarea {...defaultProps} defaultValue={multilineText} />);
+    const textarea = screen.getByRole('textbox');
+    expect(textarea).toHaveValue(multilineText);
   });
 }); 

@@ -1,4 +1,4 @@
-import { useMemo, useSyncExternalStore } from "react";
+import { Suspense, useMemo, useSyncExternalStore } from "react";
 import { type RouteLitManager } from "./manager";
 import { type ComponentStore } from "./component-store";
 import Fragment from "../components/fragment";
@@ -12,7 +12,7 @@ function getElement(
   name: string,
   key: string,
   address: number[] | undefined,
-  props: Record<string, unknown>,
+  { children: childrenProp, ...props }: Record<string, unknown>,
   children: RouteLitComponent[] | undefined,
   componentStore: ComponentStore
 ): React.ReactNode {
@@ -24,9 +24,17 @@ function getElement(
   const Component = componentStore.get(name);
   if (!Component) return null;
   return (
-    <Component id={key} key={key} {...props}>
-      {children?.map(renderComponentTree(componentStore))}
-    </Component>
+    <Suspense
+      fallback={
+        <div className="rl-stale">
+          <span>Loading...</span>
+        </div>
+      }
+    >
+      <Component id={key} key={key} {...props}>
+        {childrenProp ?? children?.map(renderComponentTree(componentStore))}
+      </Component>
+    </Suspense>
   );
 }
 

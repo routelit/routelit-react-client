@@ -13,7 +13,7 @@ describe('TextInput Component', () => {
   const defaultProps = {
     id: 'test-input',
     label: 'Test Input',
-    value: 'initial value',
+    defaultValue: 'initial value',
   };
 
   beforeEach(() => {
@@ -38,7 +38,7 @@ describe('TextInput Component', () => {
     render(<TextInput {...defaultProps} />);
     const input = screen.getByRole('textbox');
     
-    fireEvent.change(input, { target: { value: 'new value' } });
+    fireEvent.input(input, { target: { value: 'new value' } });
     fireEvent.blur(input);
     
     expect(mockDispatch).toHaveBeenCalledWith('new value');
@@ -51,7 +51,7 @@ describe('TextInput Component', () => {
     render(<TextInput {...defaultProps} />);
     const input = screen.getByRole('textbox');
     
-    fireEvent.change(input, { target: { value: 'new value' } });
+    fireEvent.input(input, { target: { value: 'new value' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     
     expect(mockDispatch).toHaveBeenCalledWith('new value');
@@ -61,10 +61,10 @@ describe('TextInput Component', () => {
     const mockDispatch = vi.fn();
     vi.mocked(useFormDispatcherWithAttr).mockReturnValue(mockDispatch);
 
-    render(<TextInput {...defaultProps} value="test value" />);
+    render(<TextInput {...defaultProps} defaultValue="test value" />);
     const input = screen.getByRole('textbox');
     
-    fireEvent.change(input, { target: { value: 'test value' } });
+    fireEvent.input(input, { target: { value: 'test value' } });
     fireEvent.blur(input);
     
     expect(mockDispatch).not.toHaveBeenCalled();
@@ -98,7 +98,7 @@ describe('TextInput Component', () => {
   });
 
   it('handles initial value correctly', () => {
-    render(<TextInput {...defaultProps} value="initial value" />);
+    render(<TextInput {...defaultProps} defaultValue="initial value" />);
     const input = screen.getByRole('textbox');
     expect(input).toHaveValue('initial value');
   });

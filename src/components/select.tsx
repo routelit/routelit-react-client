@@ -30,7 +30,6 @@ const Select = memo(function Select({
   required,
   value,
   options,
-  children: _,
   ...props
 }: SelectProps) {
   const dispatchChange = useFormDispatcherWithAttr(id, "change", "value");

@@ -14,7 +14,6 @@ export default defineConfig(({ mode }) => {
   const baseConfig = {
     plugins: [react()],
     // Set base path for all asset URLs
-    // base: '/routelit_assets/',
     server: {
       cors: true,
       // Important: Allow requests from Flask server
@@ -73,6 +72,7 @@ export default defineConfig(({ mode }) => {
       build: {
         // Relative path from this file to the Flask static directory
         outDir: '../routelit/static',
+        base: '/routelit/',
         emptyOutDir: true,
         // Generate manifest for Flask to reference assets
         manifest: true,

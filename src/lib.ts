@@ -6,22 +6,8 @@ import initManager from "./core/initializer";
 import { ComponentStore } from "./core/component-store";
 import Fragment from "./components/fragment";
 import Link from "./components/link";
-import Dialog from "./components/dialog";
 import Form from "./components/form";
 import Head from "./components/head";
-import Container from "./components/container";
-import Markdown from "./components/markdown";
-import Image from "./components/image";
-import Button from "./components/button";
-import Expander from "./components/expander";
-import { Heading, Title, Header, Subheader } from './components/heading'
-import Checkbox from "./components/checkbox";
-import CheckboxGroup from "./components/checkbox-group";
-import Flex from "./components/flex";
-import Input from "./components/input";
-import Radio from "./components/radio";
-import Select from "./components/select";
-import Textarea from "./components/textarea";
 import {
   useDispatcherWith,
   useDispatcherWithAttr,
@@ -32,6 +18,12 @@ import {
 } from "./core/context";
 import { RouteLitManager } from "./core/manager";
 import { renderApp } from "./app-factory";
+import {
+  withEventDispatcher,
+  withValueEventDispatcher,
+  withSimpleComponent,
+  withInputValueEventDispatcher,
+} from "./core/hoc";
 
 // Define the type for our client interface
 export interface RoutelitClientType {
@@ -44,6 +36,10 @@ export interface RoutelitClientType {
   useIsLoading: typeof useIsLoading;
   useError: typeof useError;
   renderApp: (rootId?: string) => void;
+  withEventDispatcher: typeof withEventDispatcher;
+  withValueEventDispatcher: typeof withValueEventDispatcher;
+  withSimpleComponent: typeof withSimpleComponent;
+  withInputValueEventDispatcher: typeof withInputValueEventDispatcher;
 }
 
 // Check if we already have an instance in the window object
@@ -75,6 +71,18 @@ if (window.RoutelitClient) {
   componentStore = new ComponentStore();
 }
 
+const Dialog = React.lazy(() => import("./components/dialog"));
+const Container = React.lazy(() => import("./components/container"));
+const Expander = React.lazy(() => import("./components/expander"));
+const Flex = React.lazy(() => import("./components/flex"));
+const Input = React.lazy(() => import("./components/input"));
+const Radio = React.lazy(() => import("./components/radio"));
+const Select = React.lazy(() => import("./components/select"));
+const Textarea = React.lazy(() => import("./components/textarea"));
+const Checkbox = React.lazy(() => import("./components/checkbox"));
+const CheckboxGroup = React.lazy(() => import("./components/checkbox-group"));
+const Markdown = React.lazy(() => import("./components/markdown"));
+
 // Register components
 componentStore.register("fragment", Fragment);
 componentStore.register("link", Link);
@@ -83,22 +91,41 @@ componentStore.register("form", Form);
 componentStore.register("head", Head);
 componentStore.register("container", Container);
 componentStore.register("markdown", Markdown);
-componentStore.register("image", Image);
-componentStore.register("button", Button);
+componentStore.register("image", withSimpleComponent("img"));
+componentStore.register("hr", withSimpleComponent("hr"));
+componentStore.register(
+  "button",
+  withEventDispatcher("button", { type: "button" })
+);
 componentStore.register("expander", Expander);
-componentStore.register("heading", Heading);
-componentStore.register("title", Title);
-componentStore.register("header", Header);
-componentStore.register("subheader", Subheader);
+componentStore.register("title", withSimpleComponent("h1"));
+componentStore.register("header", withSimpleComponent("h2"));
+componentStore.register("subheader", withSimpleComponent("h3"));
 componentStore.register("flex", Flex);
 componentStore.register("text-input", Input);
+componentStore.register(
+  "single-text-input",
+  withInputValueEventDispatcher("input")
+);
 componentStore.register("radio", Radio);
 componentStore.register("select", Select);
 componentStore.register("textarea", Textarea);
+componentStore.register(
+  "single-textarea",
+  withInputValueEventDispatcher("textarea")
+);
 componentStore.register("checkbox", Checkbox);
+componentStore.register(
+  "single-checkbox",
+  withValueEventDispatcher("input", {
+    type: "checkbox",
+    rlValueAttr: "checked",
+    rlEventValueGetter: (e: React.ChangeEvent<HTMLInputElement>) =>
+      e.currentTarget.checked,
+  })
+);
 componentStore.register("checkbox-group", CheckboxGroup);
 componentStore.forceUpdate();
-
 
 export {
   useDispatcherWith,
@@ -110,6 +137,10 @@ export {
   useFormDispatcherWithAttr,
   useFormDispatcher,
   renderApp,
+  withEventDispatcher,
+  withValueEventDispatcher,
+  withSimpleComponent,
+  withInputValueEventDispatcher,
 };
 
 const RoutelitClient: RoutelitClientType = {
@@ -122,6 +153,10 @@ const RoutelitClient: RoutelitClientType = {
   useFormDispatcherWithAttr,
   useFormDispatcher,
   renderApp,
+  withEventDispatcher,
+  withValueEventDispatcher,
+  withSimpleComponent,
+  withInputValueEventDispatcher,
 };
 
 // Expose them globally
@@ -130,7 +165,7 @@ window.ReactDOM = ReactDOM;
 window.jsxRuntime = {
   jsx: React.createElement,
   jsxs: React.createElement,
-  Fragment: React.Fragment
+  Fragment: React.Fragment,
 };
 window.RoutelitClient = RoutelitClient;
 
