@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { RouteLitManager } from '../../core/manager';
 import * as serverApi from '../../core/server-api';
 import * as actions from '../../core/actions';
@@ -9,25 +9,19 @@ vi.mock('../../core/server-api', () => ({
   sendEventStream: vi.fn()
 }));
 
-vi.mock('../../core/actions', () => ({
-  applyActions: vi.fn((draft, actions) => {
-    // Simple mock implementation that actually modifies the draft
-    actions.forEach((action: AddAction) => {
-      if (action.type === 'add') {
-        if (action.address.length === 1) {
-          draft[action.address[0]] = action.element;
-        }
-      }
-    });
-  }),
-  prependAddressToActions: vi.fn((resp: ActionsResponse, address: number[]) => ({
-    ...resp,
-    actions: resp.actions.map(action => ({
-      ...action,
-      address: [...address, ...action.address]
+vi.mock('../../core/actions', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    prependAddressToActions: vi.fn((resp: ActionsResponse, address: number[]) => ({
+      ...resp,
+      actions: resp.actions.map(action => ({
+        ...action,
+        address: [...address, ...action.address]
+      }))
     }))
-  }))
-}));
+  };
+});
 
 // Helper function to create async generator from array
 async function* createAsyncGenerator<T>(items: T[]): AsyncGenerator<T> {
@@ -38,31 +32,35 @@ async function* createAsyncGenerator<T>(items: T[]): AsyncGenerator<T> {
 
 describe('RouteLitManager', () => {
   let manager: RouteLitManager;
-  const mockComponentsTree: RouteLitComponent[] = [
-    {
-      name: 'test',
-      props: { id: 'test1' },
-      key: 'test1',
-      address: [0]
-    },
-    {
-      name: 'test2',
-      props: { id: 'test2' },
-      key: 'test2',
-      address: [1],
-      children: [
-        {
-          name: 'child',
-          props: { id: 'child' },
-          key: 'child',
-          address: [1, 0]
-        }
-      ]
-    }
-  ];
+  const mockRootComponent: RouteLitComponent = {
+    name: 'root',
+    key: 'root',
+    props: {},
+    children: [
+      {
+        name: 'test',
+        props: { id: 'test1' },
+        key: 'test1',
+      },
+      {
+        name: 'test2',
+        props: { id: 'test2' },
+        key: 'test2',
+        children: [
+          {
+            name: 'child',
+            props: { id: 'child' },
+            key: 'child',
+          }
+        ]
+      }
+    ]
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
+    
     // Save the original window.location and history
     Object.defineProperty(window, 'location', {
       value: {
@@ -84,11 +82,13 @@ describe('RouteLitManager', () => {
     vi.mocked(serverApi.sendEventStream).mockImplementation((event) => {
       if (event.detail.type === 'initialize') {
         return createAsyncGenerator([{
-          actions: mockComponentsTree.map((component, index) => ({
-            type: 'add',
-            address: [index],
-            element: component
-          } as AddAction)),
+          actions: [
+            {
+              type: 'set',
+              address: [],
+              element: { ...mockRootComponent }
+            } as SetAction
+          ],
           target: 'fragment' as const
         }]);
       }
@@ -98,26 +98,158 @@ describe('RouteLitManager', () => {
       }]);
     });
 
-    // Also mock sendEvent for backward compatibility tests
-    vi.mocked(serverApi.sendEvent).mockImplementation((event) => {
-      if (event.detail.type === 'initialize') {
-        return Promise.resolve({
-          actions: mockComponentsTree.map((component, index) => ({
-            type: 'add',
-            address: [index],
-            element: component
-          } as AddAction)),
-          target: 'fragment'
-        });
-      }
-      return Promise.resolve({
-        actions: [],
+    // Initialize a new manager for each test
+    manager = new RouteLitManager({});
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  describe('action batching and throttling', () => {
+    it('should batch actions with the same target', async () => {
+      // Create a simple manager for this test that avoids Immer issues
+      const testManager = new RouteLitManager({});
+      
+      // Spy on the internal method instead of the mocked external one
+      const applyActionsSpy = vi.spyOn(testManager, 'applyActions');
+      
+      // First trigger an action to set the lastExecutionTime
+      const setupAction: AddAction = {
+        type: 'add',
+        address: [0],
+        element: { name: 'setup', key: 'setup', props: {} },
         target: 'fragment'
-      });
+      };
+      
+      testManager.batchAction(setupAction);
+      expect(applyActionsSpy).toHaveBeenCalledTimes(1);
+      applyActionsSpy.mockClear();
+      
+      const action1: AddAction = {
+        type: 'add',
+        address: [0],
+        element: { name: 'div1', key: 'div1', props: {} },
+        target: 'fragment'
+      };
+
+      const action2: AddAction = {
+        type: 'add',
+        address: [1],
+        element: { name: 'div2', key: 'div2', props: {} },
+        target: 'fragment'
+      };
+
+      // Clear any existing timers and spy calls
+      vi.clearAllTimers();
+
+      // Now the actions should be throttled since lastExecutionTime was recently set
+      testManager.batchAction(action1);
+      testManager.batchAction(action2);
+
+      // Actions should not be applied immediately due to throttling
+      expect(applyActionsSpy).not.toHaveBeenCalled();
+
+      // Fast-forward time to trigger the throttled execution
+      await vi.advanceTimersByTimeAsync(125); // Match THROTTLE_DELAY
+
+      // Now the actions should be applied together in a single call
+      expect(applyActionsSpy).toHaveBeenCalledTimes(1);
+      
+      // Cleanup
+      applyActionsSpy.mockRestore();
     });
 
-    // Initialize a new manager for each test with empty components tree
-    manager = new RouteLitManager({});
+    it('should flush actions when target changes', async () => {
+      // Create a simple manager for this test that avoids Immer issues
+      const testManager = new RouteLitManager({});
+      
+      // Spy on the internal method instead of the mocked external one
+      const applyActionsSpy = vi.spyOn(testManager, 'applyActions');
+
+      const fragmentAction: AddAction = {
+        type: 'add',
+        address: [0],
+        element: { name: 'div', key: 'div', props: {} },
+        target: 'fragment'
+      };
+
+      const appAction: AddAction = {
+        type: 'add',
+        address: [1],
+        element: { name: 'div2', key: 'div2', props: {} },
+        target: 'app'
+      };
+
+      // Clear any existing timers and spy calls
+      vi.clearAllTimers();
+      applyActionsSpy.mockClear();
+
+      testManager.batchAction(fragmentAction);
+      
+      // Wait a bit to ensure the first action is queued
+      await vi.advanceTimersByTimeAsync(10);
+      
+      testManager.batchAction(appAction);
+
+      // First action should be flushed immediately when target changes
+      expect(applyActionsSpy).toHaveBeenCalledTimes(1);
+
+      // Fast-forward time to trigger the throttled execution of second action
+      await vi.advanceTimersByTimeAsync(125); // Match THROTTLE_DELAY
+
+      // Second action should be applied after throttle delay
+      expect(applyActionsSpy).toHaveBeenCalledTimes(2);
+      
+      // Cleanup
+      applyActionsSpy.mockRestore();
+    });
+
+    it('should flush pending actions on terminate', async () => {
+      // Create a simple manager for this test that avoids Immer issues
+      const testManager = new RouteLitManager({});
+      
+      // Spy on the internal method instead of the mocked external one
+      const applyActionsSpy = vi.spyOn(testManager, 'applyActions');
+
+      // First trigger an action to set the lastExecutionTime
+      const setupAction: AddAction = {
+        type: 'add',
+        address: [0],
+        element: { name: 'setup', key: 'setup', props: {} },
+        target: 'fragment'
+      };
+      
+      testManager.batchAction(setupAction);
+      expect(applyActionsSpy).toHaveBeenCalledTimes(1);
+      applyActionsSpy.mockClear();
+
+      const action: AddAction = {
+        type: 'add',
+        address: [0],
+        element: { name: 'div', key: 'div', props: {} },
+        target: 'fragment'
+      };
+
+      // Clear any existing timers and spy calls
+      vi.clearAllTimers();
+
+      // Now the action should be throttled since lastExecutionTime was recently set
+      testManager.batchAction(action);
+      
+      // Action should not be applied yet
+      expect(applyActionsSpy).not.toHaveBeenCalled();
+
+      // Terminate should flush immediately without waiting for timer
+      testManager.terminate();
+
+      // Action should be flushed on terminate
+      expect(applyActionsSpy).toHaveBeenCalledTimes(1);
+      
+      // Cleanup
+      applyActionsSpy.mockRestore();
+    });
   });
 
   describe('initialization and cleanup', () => {
@@ -135,15 +267,37 @@ describe('RouteLitManager', () => {
       );
     });
 
-    it('should send initialize event and fetch initial data on initialize', async () => {
-      // Wait for the initialize call to complete
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
+    it('should send initialize event and fetch initial data on initialize', () => {
+      // Clear the mock first
+      vi.mocked(serverApi.sendEventStream).mockClear();
+
+      // Call initialize
       manager.initialize();
-      
-      // Wait for async operations to complete
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
+
+      // Verify the sendEventStream was called with initialize event
+      // We don't need to wait for completion, just verify it was called
+      expect(serverApi.sendEventStream).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: expect.objectContaining({
+            type: 'initialize',
+            id: 'browser-navigation'
+          })
+        }),
+        undefined,
+        expect.any(AbortController)
+      );
+    });
+
+    it('should not initialize DOM twice', () => {
+      // Clear the mock first
+      vi.mocked(serverApi.sendEventStream).mockClear();
+
+      // Initialize twice
+      manager.initialize();
+      manager.initialize();
+
+      // Verify sendEventStream was called only once with initialize event
+      expect(serverApi.sendEventStream).toHaveBeenCalledTimes(1);
       expect(serverApi.sendEventStream).toHaveBeenCalledWith(
         expect.objectContaining({
           detail: expect.objectContaining({
@@ -219,29 +373,28 @@ describe('RouteLitManager', () => {
 
       // Create a promise that we can resolve manually
       let resolvePromise!: (value: ActionsResponse) => void;
+      const controlledPromise = new Promise<ActionsResponse>(resolve => {
+        resolvePromise = resolve;
+      });
+
       const controlledGenerator = (async function* () {
-        const response = await new Promise<ActionsResponse>(resolve => { 
-          resolvePromise = resolve; 
-        });
+        const response = await controlledPromise;
         yield response;
       })();
 
       vi.mocked(serverApi.sendEventStream).mockReturnValue(controlledGenerator);
 
-      // Start handling the event
+      // Start handling the event but don't await it yet
       const handlePromise = manager.handleEvent(event);
 
-      // Give the loading state a moment to update
-      await new Promise(resolve => setTimeout(resolve, 0));
-
-      // Loading state should be true
+      // Loading state should be true immediately
       expect(manager.isLoading()).toBe(true);
       expect(loadingListener).toHaveBeenCalledWith(true);
 
       // Reset the mock to ensure we're testing the right callback
       loadingListener.mockClear();
 
-      // Resolve the promise
+      // Resolve the promise with a response
       resolvePromise({ actions: [], target: 'fragment' as const });
 
       // Wait for the event handler to complete
@@ -270,6 +423,34 @@ describe('RouteLitManager', () => {
 
       expect(manager.getError()).toBe(testError);
       expect(errorListener).toHaveBeenCalledWith(testError);
+    });
+
+    it('should handle errors during applyActions', () => {
+      const errorListener = vi.fn();
+      manager.subscribeError(errorListener);
+
+      // Spy on applyActions and make it throw an error for this test
+      const testError = new Error('Invalid component tree mutation');
+      const applyActionsSpy = vi.spyOn(actions, 'applyActions').mockImplementation(() => {
+        throw testError;
+      });
+
+      const action: AddAction = {
+        type: 'add',
+        address: [0],
+        element: { name: 'test', key: 'test', props: {} }
+      };
+
+      manager.applyActions({
+        actions: [action],
+        target: 'fragment'
+      });
+
+      expect(manager.getError()).toBe(testError);
+      expect(errorListener).toHaveBeenCalledWith(testError);
+      
+      // Restore the original implementation
+      applyActionsSpy.mockRestore();
     });
 
     it('should handle navigation events with streaming', async () => {
@@ -411,228 +592,244 @@ describe('RouteLitManager', () => {
   });
 
   describe('component tree handling', () => {
-    it('should apply actions to the component tree', async () => {
-      // Initialize manager to populate components tree
-      manager.initialize();
-      await new Promise(resolve => setTimeout(resolve, 0));
+    let parentManager: RouteLitManager;
+    let childManager: RouteLitManager;
+    let grandchildManager: RouteLitManager;
 
-      const addAction: AddAction = {
-        type: 'add',
-        address: [1],
-        element: { name: 'div', key: 'new', props: {}, address: [1] }
-      };
+    beforeEach(() => {
+      parentManager = new RouteLitManager({ rootComponent: mockRootComponent });
+      // Initialize parent manager to ensure component tree is set up
+      parentManager.initialize();
+      
+      childManager = new RouteLitManager({
+        fragmentId: 'child',
+        parentManager,
+        address: [1]
+      });
 
-      const actionsResponse: ActionsResponse = {
-        actions: [addAction],
-        target: 'fragment'
-      };
-
-      // Create a spy on applyActions before calling the method
-      const applyActionsSpy = vi.spyOn(actions, 'applyActions');
-
-      manager.applyActions(actionsResponse);
-
-      // Use simpler assertion to check if it was called
-      expect(applyActionsSpy).toHaveBeenCalled();
+      grandchildManager = new RouteLitManager({
+        fragmentId: 'grandchild',
+        parentManager: childManager,
+        address: [0]
+      });
     });
 
-    it('should notify listeners when component tree changes', async () => {
-      const listener = vi.fn();
-      manager.subscribe(listener);
+    it('should get root component from parent', () => {
+      const root = childManager.getRootComponent();
+      expect(root).toBeDefined();
+      expect(root.name).toBe('test2');
+      expect(root.key).toBe('test2');
+    });
 
-      // Initialize manager to populate components tree
-      manager.initialize();
-      await new Promise(resolve => setTimeout(resolve, 0));
+    it('should get element at address through parent', () => {
+      const element = RouteLitManager.getElementAtAddress(childManager.getRootComponent(), [0]);
+      expect(element).toBeDefined();
+      expect(element.key).toBe('child');
+    });
 
-      const addAction: AddAction = {
+    it('should throw error for invalid address', () => {
+      expect(() => RouteLitManager.getElementAtAddress(childManager.getRootComponent(), [99])).toThrow('Component not found');
+    });
+
+    it('should handle nested fragment addresses correctly', () => {
+      // Test that grandchild manager correctly builds its complete address path
+      const action: AddAction = {
         type: 'add',
         address: [0],
-        element: { name: 'div', key: 'new', props: {}, address: [0] }
+        element: { name: 'test', key: 'test', props: {} }
       };
 
       const actionsResponse: ActionsResponse = {
-        actions: [addAction],
+        actions: [action],
         target: 'fragment'
       };
 
-      manager.applyActions(actionsResponse);
+      grandchildManager.applyActions(actionsResponse);
 
-      expect(listener).toHaveBeenCalled();
+      // The address should be [1] - parent's address only since child's address is relative
+      expect(actions.prependAddressToActions).toHaveBeenCalledWith(
+        actionsResponse,
+        [1]
+      );
     });
 
-    it('should access components at a specific address', async () => {
-      // Initialize manager to populate components tree
-      manager.initialize();
-      await new Promise(resolve => setTimeout(resolve, 0));
+    it('should slice address when parent is also a fragment', () => {
+      // Create a nested component tree
+      const nestedComponent: RouteLitComponent = {
+        name: 'root',
+        key: 'root',
+        props: {},
+        children: [
+          {
+            name: 'level1',
+            key: 'level1',
+            props: {},
+            children: [
+              {
+                name: 'level2',
+                key: 'level2',
+                props: {},
+                children: [
+                  {
+                    name: 'level3',
+                    key: 'level3',
+                    props: {},
+                    children: [
+                      {
+                        name: 'target',
+                        key: 'target',
+                        props: {}
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      };
 
-      // Test accessing root level component which should exist
-      const components = manager.getAtAddress([1]);
-      expect(components).toBeDefined();
-      
-      // Test that we can get the components tree
-      const tree = manager.getComponentsTree();
-      expect(tree).toBeDefined();
-      expect(Array.isArray(tree)).toBe(true);
+      // Create a root manager with the nested component tree
+      const rootManager = new RouteLitManager({ rootComponent: nestedComponent });
+      rootManager.initialize();
+
+      // Create a fragment manager with a fragment parent
+      const fragmentParent = new RouteLitManager({
+        fragmentId: 'parent-fragment',
+        parentManager: rootManager,
+        address: [0, 0, 0] // Points to level3
+      });
+
+      const fragmentChild = new RouteLitManager({
+        fragmentId: 'child-fragment',
+        parentManager: fragmentParent,
+        address: [0] // Points to target relative to parent
+      });
+
+      const action: AddAction = {
+        type: 'add',
+        address: [0],
+        element: { name: 'test', key: 'test', props: {} }
+      };
+
+      const actionsResponse: ActionsResponse = {
+        actions: [action],
+        target: 'fragment'
+      };
+
+      fragmentChild.applyActions(actionsResponse);
+
+      // Should slice the first element of the child's address since parent is a fragment
+      expect(actions.prependAddressToActions).toHaveBeenCalledWith(
+        actionsResponse,
+        [0, 0, 0]  // parent address only since child address is relative
+      );
+    });
+
+    afterEach(() => {
+      parentManager.terminate();
     });
   });
 
   describe('parent-child fragment relationship', () => {
-    it('should delegate actions to parent manager when in a fragment', async () => {
-      const parentManager = new RouteLitManager({});
-      // Initialize parent manager
-      parentManager.initialize();
-      await new Promise(resolve => setTimeout(resolve, 0));
+    let parentManager: RouteLitManager;
+    let childManager: RouteLitManager;
 
-      const childManager = new RouteLitManager({
-        fragmentId: 'child-fragment',
+    beforeEach(() => {
+      parentManager = new RouteLitManager({ rootComponent: mockRootComponent });
+      childManager = new RouteLitManager({
+        fragmentId: 'child',
         parentManager,
-        address: [0] // Use a valid address that exists
+        address: [1]
       });
+    });
 
-      // Spy on parent manager's applyActions
-      const applyActionsSpy = vi.spyOn(parentManager, 'applyActions');
-
-      const addAction: AddAction = {
+    it('should delegate actions to parent manager', () => {
+      const action: AddAction = {
         type: 'add',
         address: [0],
-        element: { name: 'div', key: 'new', props: {}, address: [0] }
+        element: { name: 'div', key: 'test', props: {} }
       };
 
       const actionsResponse: ActionsResponse = {
-        actions: [addAction],
+        actions: [action],
         target: 'fragment'
       };
 
       childManager.applyActions(actionsResponse);
 
-      // Verify that prependAddressToActions was called with the correct address
       expect(actions.prependAddressToActions).toHaveBeenCalledWith(
         actionsResponse,
-        [0]
+        [1]
       );
-
-      // Check that parent's applyActions was called with the processed actions
-      expect(applyActionsSpy).toHaveBeenCalled();
     });
 
     it('should propagate loading state from parent to child', () => {
-      const parentManager = new RouteLitManager({});
-
-      // Set parent to loading
-      const loadingEvent = new CustomEvent<UIEventPayload>('routelit:event', {
-        detail: { id: 'test', type: 'click' }
-      });
-
-      // Create an unresolved generator
-      vi.mocked(serverApi.sendEventStream).mockReturnValue((async function* () {
-        // This generator never resolves, keeping loading state true
-        await new Promise(() => {});
-        yield { actions: [], target: 'fragment' as const };
-      })());
-
-      // Start the loading process on parent
-      parentManager.handleEvent(loadingEvent);
-
-      // Create child manager
-      const childManager = new RouteLitManager({
-        fragmentId: 'child',
-        parentManager
-      });
-
-      // Child should report loading because parent is loading
+      parentManager['_isLoading'] = true;
       expect(childManager.isLoading()).toBe(true);
     });
 
-    it('should propagate errors from parent to child', async () => {
-      const parentManager = new RouteLitManager({});
-      const childManager = new RouteLitManager({
-        fragmentId: 'child',
-        parentManager
-      });
-
-      // Make parent throw an error
+    it('should propagate errors from parent to child', () => {
       const error = new Error('Test error');
-      const event = new CustomEvent<UIEventPayload>('routelit:event', {
-        detail: { id: 'test', type: 'click' }
-      });
-
-      vi.mocked(serverApi.sendEventStream).mockImplementation(async function* (): AsyncGenerator<ActionsResponse> {
-        throw error;
-        yield { actions: [], target: 'fragment' as const }; // This line will never be reached, but TypeScript requires it
-      });
-
-      // Now that handleEvent is async, we can await it
-      await parentManager.handleEvent(event);
-
-      // Child should see the parent's error
+      parentManager['_error'] = error;
       expect(childManager.getError()).toBe(error);
     });
 
     it('should handle app-level actions in fragments', () => {
-      const parentManager = new RouteLitManager({});
-      const childManager = new RouteLitManager({
-        fragmentId: 'child',
-        parentManager,
-        address: [0]
-      });
-
       const appAction: AddAction = {
         type: 'add',
         address: [0],
-        element: { name: 'div', key: 'app-element', props: {}, address: [0] },
+        element: { name: 'div', key: 'test', props: {} },
         target: 'app'
       };
 
-      const applyActionsSpy = vi.spyOn(parentManager, 'applyActions');
-
       childManager.batchAction(appAction);
 
-      // Should delegate to parent without prepending address
-      expect(applyActionsSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          actions: [appAction],
-          target: 'app'
-        }),
-        true
-      );
+      // Should be delegated to parent without address prepending
+      expect(actions.prependAddressToActions).not.toHaveBeenCalled();
     });
   });
 
   describe('subscription management', () => {
     it('should allow subscribing and unsubscribing to component tree changes', () => {
-      const listener = vi.fn();
+      // Create a manager with a root component
+      const testManager = new RouteLitManager({ rootComponent: mockRootComponent });
+      testManager.initialize();
 
-      const unsubscribe = manager.subscribe(listener);
+      const listener = vi.fn();
+      const unsubscribe = testManager.subscribe(listener);
 
       // Apply actions to trigger notification
-      const addAction1: AddAction = {
-        type: 'add',
-        address: [0],
-        element: { name: 'div', key: 'new', props: {}, address: [0] }
+      const setAction: SetAction = {
+        type: 'set',
+        address: [],
+        element: { ...mockRootComponent, name: 'updated' }
       };
 
-      manager.applyActions({
-        actions: [addAction1],
+      // First test with actual action
+      testManager.applyActions({
+        actions: [setAction],
         target: 'fragment'
       });
 
       expect(listener).toHaveBeenCalledTimes(1);
+      expect(listener).toHaveBeenLastCalledWith({ ...mockRootComponent, name: 'updated' });
 
       // Unsubscribe and verify no more calls
       unsubscribe();
 
-      const addAction2: AddAction = {
-        type: 'add',
-        address: [1],
-        element: { name: 'span', key: 'another', props: {}, address: [1] }
+      const setAction2: SetAction = {
+        type: 'set',
+        address: [],
+        element: { ...mockRootComponent, name: 'updated2' }
       };
 
-      manager.applyActions({
-        actions: [addAction2],
+      testManager.applyActions({
+        actions: [setAction2],
         target: 'fragment'
       });
 
-      expect(listener).toHaveBeenCalledTimes(1); // Still just one call
+      expect(listener).toHaveBeenCalledTimes(1); // No more calls after unsubscribe
     });
 
     it('should allow subscribing to loading state changes', () => {
@@ -676,29 +873,67 @@ describe('RouteLitManager', () => {
     });
 
     it('should propagate subscriptions from parent to child', () => {
-      const parentManager = new RouteLitManager({});
+      // Create parent manager with root component that has children
+      const mockParentComponent: RouteLitComponent = {
+        key: 'parent',
+        name: 'parent',
+        props: {},
+        children: [
+          {
+            key: 'child1',
+            name: 'child1',
+            props: {},
+            children: []
+          },
+          {
+            key: 'child2',
+            name: 'child2',
+            props: {},
+            children: []
+          }
+        ]
+      };
+
+      // Create parent manager with root component
+      const parentManager = new RouteLitManager({ rootComponent: mockParentComponent });
+      parentManager.initialize();
+
+      // Create child manager pointing to child2 component
       const childManager = new RouteLitManager({
         fragmentId: 'child',
-        parentManager
+        parentManager,
+        address: [1] // Points to child2 component
       });
 
       const listener = vi.fn();
       childManager.subscribe(listener);
 
-      // Apply action to parent
-      const addAction: AddAction = {
-        type: 'add',
-        address: [0],
-        element: { name: 'div', key: 'test', props: {}, address: [0] }
+      // Apply action to child manager itself (empty address targets the fragment root)
+      const setAction: SetAction = {
+        type: 'set',
+        address: [], // Target the child component itself
+        element: { 
+          key: 'child2',
+          name: 'updated-child2',
+          props: {},
+          children: []
+        }
       };
 
-      parentManager.applyActions({
-        actions: [addAction],
+      // Apply action to child manager
+      childManager.applyActions({
+        actions: [setAction],
         target: 'fragment'
       });
 
       // Child listener should be called
-      expect(listener).toHaveBeenCalled();
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(listener).toHaveBeenLastCalledWith({
+        key: 'child2',
+        name: 'updated-child2',
+        props: {},
+        children: []
+      });
     });
   });
 

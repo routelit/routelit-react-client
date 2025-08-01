@@ -24,6 +24,7 @@ import {
   withSimpleComponent,
   withInputValueEventDispatcher,
 } from "./core/hoc";
+import { useLinkClickHandler } from "./core/hooks";
 
 // Define the type for our client interface
 export interface RoutelitClientType {
@@ -40,6 +41,7 @@ export interface RoutelitClientType {
   withValueEventDispatcher: typeof withValueEventDispatcher;
   withSimpleComponent: typeof withSimpleComponent;
   withInputValueEventDispatcher: typeof withInputValueEventDispatcher;
+  useLinkClickHandler: typeof useLinkClickHandler;
 }
 
 // Check if we already have an instance in the window object
@@ -67,7 +69,7 @@ if (window.RoutelitClient) {
   manager = window.RoutelitClient.manager;
   componentStore = window.RoutelitClient.componentStore;
 } else {
-  manager = initManager("routelit-data");
+  manager = initManager();
   componentStore = new ComponentStore();
 }
 
@@ -83,7 +85,9 @@ const Checkbox = React.lazy(() => import("./components/checkbox"));
 const CheckboxGroup = React.lazy(() => import("./components/checkbox-group"));
 const Markdown = React.lazy(() => import("./components/markdown"));
 
+
 // Register components
+componentStore.register("root", withSimpleComponent("div", { className: "rl-container" }));
 componentStore.register("fragment", Fragment);
 componentStore.register("link", Link);
 componentStore.register("dialog", Dialog);
@@ -141,6 +145,7 @@ export {
   withValueEventDispatcher,
   withSimpleComponent,
   withInputValueEventDispatcher,
+  useLinkClickHandler,
 };
 
 const RoutelitClient: RoutelitClientType = {
@@ -157,6 +162,7 @@ const RoutelitClient: RoutelitClientType = {
   withValueEventDispatcher,
   withSimpleComponent,
   withInputValueEventDispatcher,
+  useLinkClickHandler,
 };
 
 // Expose them globally

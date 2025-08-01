@@ -1,5 +1,7 @@
-import { useRef } from "react";
-import { useFormDispatcherWithAttr } from "./context";
+import { createElement, ComponentProps, useRef, useMemo } from "react";
+import { useFormDispatcherWithAttr, useComponentStore } from "./context";
+import { FinalComponent } from "./react-renderer";
+import { type ComponentStore } from "./component-store";
 
 type InputEventTarget =
   | HTMLInputElement
@@ -12,9 +14,22 @@ type InputHookResult<T extends InputEventTarget> = {
 };
 
 export const EVENT_VALUE_GETTER = (
-  e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement> | React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement> | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  e:
+    | React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>
+    | React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
+    | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
 ) => e.currentTarget.value;
 
+/**
+ * Hook to handle input change events.
+ * @param id - The id of the input.
+ * @param value - The value of the input.
+ * @param valueGetter - The function to use to get the value from the event. Default is EVENT_VALUE_GETTER.
+ * @returns A hook to handle input change events.
+ * @example
+ * const { handleBlur, handleKeyDown } = useInputChangeEvent("input_id", "input_value");
+ * return <input onBlur={handleBlur} onKeyDown={handleKeyDown} />;
+ */
 export function useInputChangeEvent<
   T extends HTMLInputElement | HTMLTextAreaElement
 >(
@@ -45,4 +60,81 @@ export function useInputChangeEvent<
   };
 
   return { handleBlur, handleKeyDown };
+}
+
+function getInlineElements<T extends React.ElementType>(
+  props: Partial<ComponentProps<T>>,
+  elementKeys: (keyof ComponentProps<T>)[] | undefined,
+  componentStore: ComponentStore
+): Record<keyof ComponentProps<T>, React.ReactElement<unknown>> | null {
+  const elements = {} as Record<
+    keyof ComponentProps<T>,
+    React.ReactElement<unknown>
+  >;
+  if (!elementKeys || elementKeys.length === 0) return null;
+  for (const key of elementKeys) {
+    if (!props[key]) continue;
+    const element = createElement(FinalComponent, {
+      c: props[key],
+      componentStore,
+    });
+    elements[key] = element;
+  }
+  return elements;
+}
+
+/**
+ * A hook that can be used to get the inline elements of a component.
+ * @param props - The props of the component.
+ * @param elementKeys - The keys of the elements to get.
+ * @returns The inline elements of the component.
+ * @example
+ * const inlineElements = useRLInlineElement(props, ["input", "button"]);
+ * return <div>{inlineElements.input}{inlineElements.button}</div>;
+ */
+export function useRLInlineElement<T extends React.ElementType>(
+  props: Partial<ComponentProps<T>>,
+  elementKeys: (keyof ComponentProps<T>)[] | undefined
+): Record<keyof ComponentProps<T>, React.ReactElement<unknown>> | null {
+  const componentStore = useComponentStore();
+  return useMemo(
+    () => getInlineElements(props, elementKeys, componentStore),
+    [props, elementKeys, componentStore]
+  );
+}
+
+/**
+ * A hook that can be used to handle a link click event.
+ * @param id - The id of the component.
+ * @param href - The href of the link.
+ * @param replace - Whether to replace the current history entry.
+ * @param isExternal - Whether the link is external.
+ * @returns A function that can be used to handle a link click event.
+ * @example
+ * const handleClick = useLinkClickHandler({ id: "link", href: "/", replace: false, isExternal: false });
+ * return <a href="/" onClick={handleClick}>Clickable</a>;
+ */
+export function useLinkClickHandler({
+  id,
+  href,
+  replace,
+  isExternal,
+}: LinkHandlerProps): React.MouseEventHandler<HTMLAnchorElement> {
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (isExternal) {
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    const event = new CustomEvent<NavigateEventPayload>("routelit:event", {
+      detail: {
+        id: id!,
+        type: "navigate",
+        href: href!,
+        replace: replace,
+      },
+    });
+    document.dispatchEvent(event);
+  };
+  return handleClick;
 }

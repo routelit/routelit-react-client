@@ -25,6 +25,11 @@ export function useRouteLitContext() {
   return context;
 }
 
+export function useComponentStore() {
+  const { componentStore } = useRouteLitContext();
+  return componentStore;
+}
+
 export function useDispatcher() {
   const { manager } = useRouteLitContext();
   return (event: CustomEvent<UIEventPayload>) => {
@@ -32,6 +37,16 @@ export function useDispatcher() {
   };
 }
 
+/**
+ * A hook that can be used to dispatch a routelit custom event to the parent manager.
+ * This is useful for components like buttons or any other with a custom payload.
+ * @param id - The id of the component to dispatch the event to.
+ * @param type - The type of the event to dispatch.
+ * @returns A callback function that can be used to dispatch the event.
+ * @example
+ * const onClick = useDispatcherWith(id, "click");
+ * return <button onClick={() => onClick({})}>Clickable</button>;
+ */
 export function useDispatcherWith(id: string, type: string) {
   const { manager } = useRouteLitContext();
   const callback = useCallback(
@@ -47,6 +62,14 @@ export function useDispatcherWith(id: string, type: string) {
   return callback;
 }
 
+/**
+ * A hook that can be used to dispatch a routelit custom event to the parent manager.
+ * This is useful for components like checkboxes or any other with a custom attribute.
+ * @param id - The id of the component to dispatch the event to.
+ * @param type - The type of the event to dispatch.
+ * @param attr - The attribute to dispatch the event to.
+ * @returns A callback function that can be used to dispatch the event.
+ */
 export function useDispatcherWithAttr(id: string, type: string, attr: string) {
   const { manager } = useRouteLitContext();
   const callback = useCallback(
@@ -62,6 +85,16 @@ export function useDispatcherWithAttr(id: string, type: string, attr: string) {
   return callback;
 }
 
+/**
+ * A hook that can be used to dispatch a routelit custom event to the parent manager.
+ * This is useful for form components like inputs, selects, checkboxes, etc.
+ * @param id - The id of the component to dispatch the event to.
+ * @param type - The type of the event to dispatch.
+ * @returns A callback function that can be used to dispatch the event.
+ * @example
+ * const onClick = useFormDispatcher(id, "submit");
+ * return <button onClick={() => onClick({})}>Submit</button>;
+ */
 export function useFormDispatcher(id: string, type: string) {
   const { manager } = useRouteLitContext();
   const formId = useFormId();
@@ -71,6 +104,17 @@ export function useFormDispatcher(id: string, type: string) {
   return callback;
 }
 
+/**
+ * A hook that can be used to dispatch a routelit custom event to the parent manager.
+ * This is useful for form components like inputs, selects, checkboxes, etc.
+ * @param id - The id of the component to dispatch the event to.
+ * @param type - The type of the event to dispatch.
+ * @param attr - The attribute to dispatch the event to.
+ * @returns A callback function that can be used to dispatch the event.
+ * @example
+ * const onChange = useFormDispatcherWithAttr(id, "change", "value");
+ * return <input onBlur={(e) => onChange(e.target.value)} />;
+ */
 export function useFormDispatcherWithAttr(id: string, type: string, attr: string) {
   const { manager } = useRouteLitContext();
   const formId = useFormId();

@@ -38,7 +38,7 @@ function getElement(
   );
 }
 
-function FinalComponent({
+export function FinalComponent({
   c,
   componentStore,
 }: {
@@ -50,6 +50,9 @@ function FinalComponent({
       getElement(c.name, c.key, c.address, c.props, c.children, componentStore),
     [c.name, c.key, c.address, c.props, c.children, componentStore]
   );
+  if (c.virtual) {
+    return element;
+  }
   const className = c.stale ? "rl-component rl-stale" : "rl-component";
   return <div className={className}>{element}</div>;
 }
@@ -61,18 +64,13 @@ const renderComponentTree =
   };
 
 function ReactRenderer({ manager, componentStore }: Props) {
-  const componentsTree = useSyncExternalStore(
+  const rootComponent = useSyncExternalStore(
     manager.subscribe,
-    manager.getComponentsTree
+    manager.getRootComponent
   );
   useSyncExternalStore(componentStore.subscribe, componentStore.getVersion);
-  if (!componentsTree?.length) {
-    return null;
-  }
   return (
-    <div className="rl-container">
-      {componentsTree?.map(renderComponentTree(componentStore))}
-    </div>
+    <>{rootComponent.children?.map(renderComponentTree(componentStore))}</>
   );
 }
 

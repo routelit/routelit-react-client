@@ -61,16 +61,18 @@ describe('Select Component', () => {
     expect(select).toBeDisabled();
   });
 
-  it('handles simple string options correctly', () => {
-    const simpleProps = {
+  it('handles disabled options correctly', () => {
+    const propsWithDisabledOption = {
       ...defaultProps,
-      options: ['option1', 'option2', 'option3']
+      options: [
+        { value: 'option1', label: 'Option 1' },
+        { value: 'option2', label: 'Option 2', disabled: true },
+        { value: 'option3', label: 'Option 3' }
+      ]
     };
-
-    render(<Select {...simpleProps} />);
-    expect(screen.getByText('option1')).toBeInTheDocument();
-    expect(screen.getByText('option2')).toBeInTheDocument();
-    expect(screen.getByText('option3')).toBeInTheDocument();
+    render(<Select {...propsWithDisabledOption} />);
+    const options = screen.getByRole('combobox').getElementsByTagName('option');
+    expect(options[1].disabled).toBe(true);
   });
 
   it('does not dispatch change when value remains the same', () => {

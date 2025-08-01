@@ -8,15 +8,10 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   required?: boolean;
   id: string;
   value?: string;
-  options: Array<{ label: string; value: string; disabled?: boolean } | string>;
+  options: Array<{ label: string; value: string; disabled?: boolean }>;
 }
 
-function SelectOption(props: { option: SelectProps["options"][number] }) {
-  const option: SelectProps["options"][number] =
-    typeof props.option === "string"
-      ? { label: props.option, value: props.option }
-      : props.option;
-
+function SelectOption({ option }: { option: SelectProps["options"][number] }) {
   return (
     <option value={option.value} disabled={option.disabled}>
       {option.label}
@@ -58,10 +53,7 @@ const Select = memo(function Select({
         onChange={handleChange}
       >
         {options.map((option) => (
-          <SelectOption
-            key={typeof option === "string" ? option : option.value}
-            option={option}
-          />
+          <SelectOption key={option.value} option={option} />
         ))}
       </select>
     </div>

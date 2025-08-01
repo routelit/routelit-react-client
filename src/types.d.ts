@@ -8,6 +8,7 @@ interface RouteLitComponent {
   children?: RouteLitComponent[];
   address?: number[];
   stale?: boolean;
+  virtual?: boolean;
 }
 
 type ActionType =
@@ -18,7 +19,7 @@ type ActionType =
   | "fresh_boundary"
   | "last";
 
-interface Action {
+type IAction = {
   type: string;
   /**
    * The address is the sequence of indices to the array tree of elements in the session state
@@ -26,43 +27,52 @@ interface Action {
    */
   address: number[];
   target?: "app" | "fragment";
-}
+};
 
-interface AddAction extends Action {
+type AddAction = IAction & {
   type: "add";
   element: RouteLitComponent;
-}
+};
 
-interface SetAction extends Action {
+type SetAction = IAction & {
   type: "set";
   element: RouteLitComponent;
-}
+};
 
-interface RemoveAction extends Action {
+type RemoveAction = IAction & {
   type: "remove";
-}
+};
 
-interface UpdateAction extends Action {
+type UpdateAction = IAction & {
   type: "update";
   props: Record<string, unknown>;
-}
+};
 
-interface FreshBoundaryAction extends Action {
+type FreshBoundaryAction = IAction & {
   type: "fresh_boundary";
-}
+};
 
-interface LastAction extends Action {
+type LastAction = IAction & {
   type: "last";
-}
+};
 
-interface NoChangeAction extends Action {
+type NoChangeAction = IAction & {
   type: "no_change";
-}
+};
 
-interface ActionsResponse {
+type Action =
+  | AddAction
+  | SetAction
+  | RemoveAction
+  | UpdateAction
+  | FreshBoundaryAction
+  | LastAction
+  | NoChangeAction;
+
+type ActionsResponse = {
   actions: Action[];
   target: "app" | "fragment";
-}
+};
 
 interface UIEventPayload {
   type: string;
@@ -86,4 +96,11 @@ interface InitializeEventPayload extends UIEventPayload {
 
 interface ChangeEventPayload extends UIEventPayload {
   value: string | number;
+}
+
+interface LinkHandlerProps {
+  id: string;
+  href: string;
+  replace?: boolean;
+  isExternal?: boolean;
 }

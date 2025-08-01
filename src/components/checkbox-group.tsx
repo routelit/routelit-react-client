@@ -7,15 +7,7 @@ type CheckboxGroupProps = {
   value: string[];
   required?: boolean;
   flexDirection?: "row" | "col";
-  options: Array<
-    | {
-        label: string;
-        value: string;
-        caption?: string;
-        disabled?: boolean;
-      }
-    | string
-  >;
+  options: Array<{ label: string; value: string; caption?: string; disabled?: boolean }>;
 };
 
 function CheckboxGroupOption(props: {
@@ -27,9 +19,7 @@ function CheckboxGroupOption(props: {
   const { id, value, onChange } = props;
 
   const option: CheckboxGroupProps["options"][number] =
-    typeof props.option === "string"
-      ? { label: props.option, value: props.option }
-      : props.option;
+    props.option;
 
   return (
     <div key={option.value} className="rl-form-flex-control">

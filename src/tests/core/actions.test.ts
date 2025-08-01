@@ -4,34 +4,38 @@ import {
   applyRemoveAction,
   applyUpdateAction,
   applyActions,
-  prependAddressToActions
+  prependAddressToActions,
+  applyFreshBoundaryAction,
+  removeStaleComponents
 } from '../../core/actions';
 
 describe('Actions', () => {
   describe('applyAddAction', () => {
     it('should add a component at the specified address', () => {
-      const componentsTree: RouteLitComponent[] = [
-        {
-          name: 'parent',
-          key: 'parent',
-          props: {},
-          address: [0],
-          children: [
-            {
-              name: 'child1',
-              key: 'child1',
-              props: {},
-              address: [0, 0]
-            }
-          ]
-        }
-      ];
+      const rootComponent: RouteLitComponent = {
+        name: 'root',
+        key: 'root',
+        props: {},
+        children: [
+          {
+            name: 'parent',
+            key: 'parent',
+            props: {},
+            children: [
+              {
+                name: 'child1',
+                key: 'child1',
+                props: {},
+              }
+            ]
+          }
+        ]
+      };
 
       const newComponent: RouteLitComponent = {
         name: 'newChild',
         key: 'newChild',
         props: { id: 'new' },
-        address: [0, 1]
       };
 
       const addAction: AddAction = {
@@ -40,101 +44,68 @@ describe('Actions', () => {
         element: newComponent
       };
 
-      applyAddAction(componentsTree, addAction);
+      applyAddAction(rootComponent, addAction);
 
       // Check that the new component was added at the right position
-      expect(componentsTree[0].children?.length).toBe(2);
-      expect(componentsTree[0].children?.[1]).toEqual(newComponent);
-    });
-
-    it('should handle nested addresses correctly', () => {
-      const componentsTree: RouteLitComponent[] = [
-        {
-          name: 'parent',
-          key: 'parent',
-          props: {},
-          address: [0],
-          children: [
-            {
-              name: 'child',
-              key: 'child',
-              props: {},
-              address: [0, 0],
-              children: []
-            }
-          ]
-        }
-      ];
-
-      const newComponent: RouteLitComponent = {
-        name: 'deepChild',
-        key: 'deepChild',
-        props: {},
-        address: [0, 0, 0]
-      };
-
-      const addAction: AddAction = {
-        type: 'add',
-        address: [0, 0, 0],
-        element: newComponent
-      };
-
-      applyAddAction(componentsTree, addAction);
-
-      // Check that the new component was added at the right position
-      expect(componentsTree[0].children?.[0].children?.length).toBe(1);
-      expect(componentsTree[0].children?.[0].children?.[0]).toEqual(newComponent);
+      expect(rootComponent.children![0].children?.length).toBe(2);
+      expect(rootComponent.children![0].children?.[1]).toEqual(newComponent);
     });
   });
 
   describe('applyRemoveAction', () => {
     it('should remove a component at the specified address', () => {
-      const componentsTree: RouteLitComponent[] = [
-        {
-          name: 'parent',
-          key: 'parent',
-          props: {},
-          address: [0],
-          children: [
-            {
-              name: 'child1',
-              key: 'child1',
-              props: {},
-              address: [0, 0]
-            },
-            {
-              name: 'child2',
-              key: 'child2',
-              props: {},
-              address: [0, 1]
-            }
-          ]
-        }
-      ];
+      const rootComponent: RouteLitComponent = {
+        name: 'root',
+        key: 'root',
+        props: {},
+        children: [
+          {
+            name: 'parent',
+            key: 'parent',
+            props: {},
+            children: [
+              {
+                name: 'child1',
+                key: 'child1',
+                props: {},
+              },
+              {
+                name: 'child2',
+                key: 'child2',
+                props: {},
+              }
+            ]
+          }
+        ]
+      };
 
       const removeAction: RemoveAction = {
         type: 'remove',
         address: [0, 0]
       };
 
-      applyRemoveAction(componentsTree, removeAction);
+      applyRemoveAction(rootComponent, removeAction);
 
       // Check that the component was removed
-      expect(componentsTree[0].children?.length).toBe(1);
-      expect(componentsTree[0].children?.[0].key).toBe('child2');
+      expect(rootComponent.children![0].children?.length).toBe(1);
+      expect(rootComponent.children![0].children?.[0].key).toBe('child2');
     });
   });
 
   describe('applyUpdateAction', () => {
     it('should update props of a component at the specified address', () => {
-      const componentsTree: RouteLitComponent[] = [
-        {
-          name: 'parent',
-          key: 'parent',
-          props: { id: 'parent' },
-          address: [0]
-        }
-      ];
+      const rootComponent: RouteLitComponent = {
+        name: 'root',
+        key: 'root',
+        props: {},
+        children: [
+          {
+            name: 'child',
+            key: 'child',
+            props: { id: 'old' },
+          }
+        ]
+      };
 
       const updateAction: UpdateAction = {
         type: 'update',
@@ -142,50 +113,232 @@ describe('Actions', () => {
         props: { id: 'updated', newProp: 'value' }
       };
 
-      applyUpdateAction(componentsTree, updateAction);
+      applyUpdateAction(rootComponent, updateAction);
 
       // Check that the props were updated
-      expect(componentsTree[0].props).toEqual({ id: 'updated', newProp: 'value' });
+      expect(rootComponent.children![0].props).toEqual({ id: 'updated', newProp: 'value' });
+    });
+
+    it('should clear stale flag when updating props', () => {
+      const rootComponent: RouteLitComponent = {
+        name: 'root',
+        key: 'root',
+        props: {},
+        children: [
+          {
+            name: 'child',
+            key: 'child',
+            props: { id: 'old' },
+            stale: true
+          }
+        ]
+      };
+
+      const updateAction: UpdateAction = {
+        type: 'update',
+        address: [0],
+        props: { id: 'updated' }
+      };
+
+      applyUpdateAction(rootComponent, updateAction);
+
+      expect(rootComponent.children![0].stale).toBeUndefined();
+    });
+  });
+
+  describe('applyFreshBoundaryAction', () => {
+    it('should mark leaf nodes as stale after the boundary', () => {
+      const rootComponent: RouteLitComponent = {
+        name: 'root',
+        key: 'root',
+        props: {},
+        children: [
+          {
+            name: 'parent',
+            key: 'parent',
+            props: {},
+            children: [
+              {
+                name: 'child1',
+                key: 'child1',
+                props: {},
+              },
+              {
+                name: 'child2',
+                key: 'child2',
+                props: {},
+                children: []
+              }
+            ]
+          }
+        ]
+      };
+
+      const freshBoundaryAction: FreshBoundaryAction = {
+        type: 'fresh_boundary',
+        address: [0, 0]
+      };
+
+      applyFreshBoundaryAction(rootComponent, freshBoundaryAction);
+
+      // Check that nodes after the boundary are marked as stale
+      expect(rootComponent.children![0].children![1].stale).toBe(true);
+    });
+
+    it('should mark parent as stale if all children are stale', () => {
+      const rootComponent: RouteLitComponent = {
+        name: 'root',
+        key: 'root',
+        props: {},
+        children: [
+          {
+            name: 'parent',
+            key: 'parent',
+            props: {},
+            children: [
+              {
+                name: 'container',
+                key: 'container',
+                props: {},
+                children: [
+                  {
+                    name: 'child1',
+                    key: 'child1',
+                    props: {},
+                  },
+                  {
+                    name: 'child2',
+                    key: 'child2',
+                    props: {},
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      };
+
+      const freshBoundaryAction: FreshBoundaryAction = {
+        type: 'fresh_boundary',
+        address: [0, -1]
+      };
+
+      applyFreshBoundaryAction(rootComponent, freshBoundaryAction);
+
+      // Check that container is marked stale since all its children are stale
+      expect(rootComponent.children![0].children![0].stale).toBe(true);
+      expect(rootComponent.children![0].children![0].children![0].stale).toBe(true);
+      expect(rootComponent.children![0].children![0].children![1].stale).toBe(true);
+    });
+  });
+
+  describe('removeStaleComponents', () => {
+    it('should remove all stale components', () => {
+      const rootComponent: RouteLitComponent = {
+        name: 'root',
+        key: 'root',
+        props: {},
+        children: [
+          {
+            name: 'fresh',
+            key: 'fresh',
+            props: {},
+          },
+          {
+            name: 'stale',
+            key: 'stale',
+            props: {},
+            stale: true
+          },
+          {
+            name: 'parent',
+            key: 'parent',
+            props: {},
+            children: [
+              {
+                name: 'staleChild',
+                key: 'staleChild',
+                props: {},
+                stale: true
+              }
+            ]
+          }
+        ]
+      };
+
+      removeStaleComponents(rootComponent);
+
+      // Check that stale components were removed
+      expect(rootComponent.children?.length).toBe(2);
+      expect(rootComponent.children![0].key).toBe('fresh');
+      expect(rootComponent.children![1].children?.length).toBe(0);
     });
   });
 
   describe('applyActions', () => {
     it('should apply multiple actions in sequence', () => {
-      const componentsTree: RouteLitComponent[] = [
-        {
-          name: 'parent',
-          key: 'parent',
-          props: { id: 'parent' },
-          address: [0],
-          children: []
-        }
-      ];
+      const rootComponent: RouteLitComponent = {
+        name: 'root',
+        key: 'root',
+        props: {},
+        children: [
+          {
+            name: 'initial',
+            key: 'initial',
+            props: { id: 'initial' },
+          }
+        ]
+      };
 
       const addAction: AddAction = {
         type: 'add',
-        address: [0, 0],
+        address: [1],
         element: {
-          name: 'child',
-          key: 'child',
-          props: { id: 'child' },
-          address: [0, 0]
+          name: 'new',
+          key: 'new',
+          props: { id: 'new' },
         }
       };
 
       const updateAction: UpdateAction = {
         type: 'update',
         address: [0],
-        props: { id: 'updated-parent' }
+        props: { id: 'updated' }
       };
 
-      const actions: (AddAction | UpdateAction)[] = [addAction, updateAction];
+      const actions: Action[] = [addAction, updateAction];
 
-      applyActions(componentsTree, actions);
+      applyActions(rootComponent, actions);
 
       // Check that both actions were applied
-      expect(componentsTree[0].props).toEqual({ id: 'updated-parent' });
-      expect(componentsTree[0].children?.length).toBe(1);
-      expect(componentsTree[0].children?.[0].key).toBe('child');
+      expect(rootComponent.children?.length).toBe(2);
+      expect(rootComponent.children![0].props.id).toBe('updated');
+      expect(rootComponent.children![1].key).toBe('new');
+    });
+
+    it('should handle no_change action by clearing stale flag', () => {
+      const rootComponent: RouteLitComponent = {
+        name: 'root',
+        key: 'root',
+        props: {},
+        children: [
+          {
+            name: 'child',
+            key: 'child',
+            props: {},
+            stale: true
+          }
+        ]
+      };
+
+      const noChangeAction: NoChangeAction = {
+        type: 'no_change',
+        address: [0]
+      };
+
+      applyActions(rootComponent, [noChangeAction]);
+
+      expect(rootComponent.children![0].stale).toBeUndefined();
     });
   });
 
@@ -194,7 +347,7 @@ describe('Actions', () => {
       const addAction: AddAction = {
         type: 'add',
         address: [0],
-        element: { name: 'div', key: 'test', props: {}, address: [0] }
+        element: { name: 'div', key: 'test', props: {} }
       };
 
       const updateAction: UpdateAction = {

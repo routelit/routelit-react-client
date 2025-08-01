@@ -1,29 +1,21 @@
+import { useLinkClickHandler } from "../core/hooks";
+
 interface LinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   isExternal?: boolean;
   text?: string;
   replace?: boolean;
 }
 
-
-function Link({ text, children, id, href, replace, isExternal, ...props }: LinkProps) {
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (isExternal) {
-      return;
-    }
-    e.preventDefault();
-    e.stopPropagation();
-    const event = new CustomEvent<NavigateEventPayload>("routelit:event", {
-      detail: {
-        id: id!,
-        type: "navigate",
-        href: href!,
-        replace: replace,
-      },
-    });
-    document.dispatchEvent(event);
-  };
+function Link(props: LinkProps) {
+  const { id, href, text, children, replace, isExternal, ...rest } = props;
+  const handleClick = useLinkClickHandler({
+    id: id!,
+    href: href!,
+    replace,
+    isExternal,
+  });
   return (
-    <a id={id} href={href} onClick={handleClick} {...props}>
+    <a id={id} href={href} onClick={handleClick} {...rest}>
       {text || children}
     </a>
   );

@@ -11,6 +11,10 @@ import * as context from "../../core/context";
 vi.mock("../../core/context", () => ({
   useFormDispatcher: vi.fn(),
   useFormDispatcherWithAttr: vi.fn(),
+  useComponentStore: vi.fn(() => ({
+    getComponent: vi.fn(),
+    getInlineElements: vi.fn(() => null)
+  })),
 }));
 
 type MockFn = {

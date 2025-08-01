@@ -100,18 +100,6 @@ describe('CheckboxGroup Component', () => {
     expect(option2.disabled).toBe(true);
   });
 
-  it('handles simple string options correctly', () => {
-    const simpleProps = {
-      ...defaultProps,
-      options: ['option1', 'option2', 'option3']
-    };
-
-    render(<CheckboxGroup {...simpleProps} />);
-    expect(screen.getByLabelText('option1')).toBeInTheDocument();
-    expect(screen.getByLabelText('option2')).toBeInTheDocument();
-    expect(screen.getByLabelText('option3')).toBeInTheDocument();
-  });
-
   it('maintains checked state for selected options', () => {
     render(<CheckboxGroup {...defaultProps} value={['option1', 'option3']} />);
     const option1 = screen.getByLabelText('Option 1') as HTMLInputElement;

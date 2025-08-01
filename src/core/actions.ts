@@ -1,55 +1,72 @@
-function getTarget(componentsTree: RouteLitComponent[], address: number[]): RouteLitComponent[] {
-  let target = componentsTree;
+function getSingleTarget(rootComponent: RouteLitComponent, address: number[]): RouteLitComponent {
+  let target = rootComponent;
   for (let i = 0; i < address.length - 1; i++) {
-    if (!target[address[i]].children) {
-      target[address[i]].children = [];
+    if (!target.children) {
+      target.children = [];
     }
-    target = target[address[i]].children!;
+    target = target.children![address[i]];
   }
   return target;
 }
 
 export function applyAddAction(
-  componentsTree: RouteLitComponent[],
+  rootComponent: RouteLitComponent,
   action: AddAction
 ) {
-  const target = getTarget(componentsTree, action.address);
-  target.splice(action.address[action.address.length - 1], 0, action.element);
+  const target = getSingleTarget(rootComponent, action.address);
+  target.children!.splice(action.address[action.address.length - 1], 0, action.element);
 }
 
 export function applyRemoveAction(
-  componentsTree: RouteLitComponent[],
+  rootComponent: RouteLitComponent,
   action: RemoveAction
 ) {
-  const target = getTarget(componentsTree, action.address);
-  target.splice(action.address[action.address.length - 1], 1);
+  const target = getSingleTarget(rootComponent, action.address);
+  target.children!.splice(action.address[action.address.length - 1], 1);
 }
 
 export function applySetAction(
-  componentsTree: RouteLitComponent[],
+  rootComponent: RouteLitComponent,
   action: SetAction
 ) {
-  const target = getTarget(componentsTree, action.address);
+  // Special case: if address is empty, we're setting the root component
+  if (action.address.length === 0) {
+    Object.assign(rootComponent, action.element);
+    if (rootComponent.stale) {
+      rootComponent.stale = undefined;
+    }
+    return;
+  }
+
+  const targetParent = getSingleTarget(rootComponent, action.address);
   const targetIndex = action.address[action.address.length - 1];
-  const oldElement = target[targetIndex];
+  if (!targetParent.children) {
+    targetParent.children = [];
+  }
+  const target = targetParent.children[targetIndex];
   
-  // Keep the children from the old element
-  if (oldElement && oldElement.children) {
-    action.element.children = oldElement.children;
+  // Immer-compatible: mutate existing object instead of replacing
+  if (target && target.key === action.element.key) {
+    // Preserve children if keys match
+    Object.assign(target, action.element, { children: target.children });
+  } else {
+    // For new elements, use splice to replace in a way that's Immer-compatible
+    targetParent.children.splice(targetIndex, 1, action.element);
   }
   
-  target[targetIndex] = action.element;
-  if (action.element.stale) {
-    action.element.stale = undefined;
+  // Remove stale flag from the updated element
+  const updatedElement = targetParent.children[targetIndex];
+  if (updatedElement?.stale) {
+    updatedElement.stale = undefined;
   }
 }
 
 export function applyUpdateAction(
-  componentsTree: RouteLitComponent[],
+  rootComponent: RouteLitComponent,
   action: UpdateAction
 ) {
-  const target = getTarget(componentsTree, action.address);
-  const element = target[action.address[action.address.length - 1]];
+  const target = getSingleTarget(rootComponent, action.address);
+  const element = target.children![action.address[action.address.length - 1]];
   element.props = action.props;
   if (element.stale) {
     element.stale = undefined;
@@ -58,26 +75,27 @@ export function applyUpdateAction(
 
 
 export function applyFreshBoundaryAction(
-  componentsTree: RouteLitComponent[],
+  rootComponent: RouteLitComponent,
   action: FreshBoundaryAction,
 ) {
-  const target = getTarget(componentsTree, action.address);
+  const target = getSingleTarget(rootComponent, action.address);
   const staleStartsAt = action.address[action.address.length - 1] + 1;
   
   // Helper function to mark leaf nodes as stale in depth-first manner
   const markLeafNodesStale = (components: RouteLitComponent[]): number => {
     let staleCount = 0;
-    for (const component of components) {
-      if (!component.children || component.children.length === 0) {
+    for (const child of components) {
+      if (!child.children || child.children.length === 0) {
         // This is a leaf node (no children), mark it as stale
-        component.stale = true;
+        child.stale = true;
         staleCount++;
       } else {
         // This has children, traverse deeper
-        const childrenStaleCount = markLeafNodesStale(component.children);
+        const childrenStaleCount = markLeafNodesStale(child.children!);
         // If all children are stale, mark the parent as stale
-        if (childrenStaleCount === component.children.length) {
-          component.stale = true;
+        if (childrenStaleCount === child.children!.length) {
+          child.stale = true;
+          staleCount++;
         }
       }
     }
@@ -85,28 +103,30 @@ export function applyFreshBoundaryAction(
   };
   
   // Mark all leaf nodes as stale starting from the specified index
-  const componentsToProcess = target.slice(staleStartsAt);
+  const componentsToProcess = target.children?.slice(staleStartsAt);
+  if (!componentsToProcess)
+    return;
   markLeafNodesStale(componentsToProcess);
 }
 
-export function removeStaleComponents(componentsTree: RouteLitComponent[]) {
-  for (let i = componentsTree.length - 1; i >= 0; i--) {
-    const component = componentsTree[i];
+export function removeStaleComponents(rootComponent: RouteLitComponent) {
+  for (let i = rootComponent.children!.length - 1; i >= 0; i--) {
+    const component = rootComponent.children![i];
     if (component.stale) {
-      componentsTree.splice(i, 1);
+      rootComponent.children!.splice(i, 1);
     } else if (component.children?.length) {
-      removeStaleComponents(component.children);
+      removeStaleComponents(component);
     }
   }
 }
 
 function handleNoChangeAction(
-  componentsTree: RouteLitComponent[],
+  rootComponent: RouteLitComponent,
   action: NoChangeAction
 ) {
-  const target = getTarget(componentsTree, action.address);
-  const element = target[action.address[action.address.length - 1]];
-  if (element.stale) {
+  const target = getSingleTarget(rootComponent, action.address);
+  const element = target.children![action.address[action.address.length - 1]];
+  if (element && element.stale) {
     element.stale = undefined;
   }
 }
@@ -132,31 +152,31 @@ export function prependAddressToActions(
 }
 
 export function applyActions(
-  componentsTree: RouteLitComponent[],
+  rootComponent: RouteLitComponent,
   actions: Action[]
 ) {
   actions.forEach((action) => {
     switch (action.type) {
       case "add":
-        applyAddAction(componentsTree, action as AddAction);
+        applyAddAction(rootComponent, action);
         break;
       case "remove":
-        applyRemoveAction(componentsTree, action as RemoveAction);
+        applyRemoveAction(rootComponent, action);
         break;
       case "set":
-        applySetAction(componentsTree, action as SetAction);
+        applySetAction(rootComponent, action);
         break;
       case "update":
-        applyUpdateAction(componentsTree, action as UpdateAction);
+        applyUpdateAction(rootComponent, action);
         break;
       case "fresh_boundary":
-        applyFreshBoundaryAction(componentsTree, action as FreshBoundaryAction);
+        applyFreshBoundaryAction(rootComponent, action);
         break;
       case "last":
-        removeStaleComponents(componentsTree);
+        removeStaleComponents(rootComponent);
         break;
       case "no_change":
-        handleNoChangeAction(componentsTree, action as NoChangeAction);
+        handleNoChangeAction(rootComponent, action);
         break;
     }
   });
