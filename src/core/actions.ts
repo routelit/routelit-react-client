@@ -14,6 +14,9 @@ export function applyAddAction(
   action: AddAction
 ) {
   const target = getSingleTarget(rootComponent, action.address);
+  if (!target.children) {
+    target.children = [];
+  }
   target.children!.splice(action.address[action.address.length - 1], 0, action.element);
 }
 

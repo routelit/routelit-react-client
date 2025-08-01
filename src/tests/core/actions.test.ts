@@ -50,6 +50,41 @@ describe('Actions', () => {
       expect(rootComponent.children![0].children?.length).toBe(2);
       expect(rootComponent.children![0].children?.[1]).toEqual(newComponent);
     });
+
+    it('should initialize children array if it does not exist', () => {
+      const rootComponent: RouteLitComponent = {
+        name: 'root',
+        key: 'root',
+        props: {},
+        children: [
+          {
+            name: 'parent',
+            key: 'parent',
+            props: {}
+            // No children array initially
+          }
+        ]
+      };
+
+      const newComponent: RouteLitComponent = {
+        name: 'firstChild',
+        key: 'firstChild',
+        props: { id: 'new' },
+      };
+
+      const addAction: AddAction = {
+        type: 'add',
+        address: [0, 0],
+        element: newComponent
+      };
+
+      applyAddAction(rootComponent, addAction);
+
+      // Check that children array was initialized and component was added
+      expect(rootComponent.children![0].children).toBeDefined();
+      expect(rootComponent.children![0].children?.length).toBe(1);
+      expect(rootComponent.children![0].children?.[0]).toEqual(newComponent);
+    });
   });
 
   describe('applyRemoveAction', () => {
