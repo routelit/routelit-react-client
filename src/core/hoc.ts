@@ -19,7 +19,7 @@ import {
  * @returns A wrapped component that passes the initial props to the component.
  * @example
  * const Container = withSimpleComponent("div", {
- *   className: "container", // actual component props are passed 
+ *   className: "container", // actual component props are passed
  *   rlInlineElementsAttrs: ["header"], // optional, default is undefined
  * });
  */
@@ -27,7 +27,9 @@ export function withSimpleComponent<T extends React.ElementType>(
   Component: T,
   props?: Partial<ComponentProps<T> & { rlInlineElementsAttrs: string[] }>
 ) {
-  const { rlInlineElementsAttrs, ...initialProps } = (props || {}) as Partial<ComponentProps<T> & { rlInlineElementsAttrs: string[] }>;
+  const { rlInlineElementsAttrs, ...initialProps } = (props || {}) as Partial<
+    ComponentProps<T> & { rlInlineElementsAttrs: string[] }
+  >;
   return function WithSimpleComponent({
     children,
     ...props
@@ -69,7 +71,7 @@ const DEFAULT_EVENT_DISPATCHER_PROPS: Omit<WithEventNameProps, "id"> = {
  *   rlEventName: "click", // optional, default is "click"
  *   rlEventAttr: "onClick", // optional, default is "onClick"
  *   rlInlineElementsAttrs: ["leftIcon", "rightIcon"], // optional, default is undefined
- *   type: "button", // actual component props are passed 
+ *   type: "button", // actual component props are passed
  * });
  */
 export function withEventDispatcher<T extends React.ElementType>(
@@ -144,7 +146,7 @@ const DEFAULT_VALUE_EVENT_DISPATCHER_PROPS: Omit<ValueHocProps, "id"> = {
  *   rlValueAttr: "value",
  *   rlEventValueGetter: (e) => e.target.value,
  *   rlInlineElementsAttrs: ["leftIcon", "rightIcon"], // optional, default is undefined
- *   type: "text", // actual component props are passed 
+ *   type: "text", // actual component props are passed
  * });
  * @example
  * const Checkbox = withValueEventDispatcher("input", {
@@ -194,7 +196,12 @@ export function withValueEventDispatcher<T extends React.ElementType>(
     );
     return createElement(
       Component,
-      { ...initialProps, ...props, ...maybeInlineElements, [rlEventAttr]: onChange },
+      {
+        ...initialProps,
+        ...props,
+        ...maybeInlineElements,
+        [rlEventAttr]: onChange,
+      },
       children
     );
   };
@@ -209,7 +216,10 @@ export type WithInputValueEventDispatcherProps = PropsWithChildren<{
   rlInlineElementsAttrs?: string[];
 }>;
 
-const DEFAULT_INPUT_VALUE_EVENT_DISPATCHER_PROPS: Omit<WithInputValueEventDispatcherProps, "id"> = {
+const DEFAULT_INPUT_VALUE_EVENT_DISPATCHER_PROPS: Omit<
+  WithInputValueEventDispatcherProps,
+  "id"
+> = {
   rlOnBlurAttr: "onBlur",
   rlOnKeyDownAttr: "onKeyDown",
   rlValueAttr: "defaultValue",
@@ -237,7 +247,7 @@ const DEFAULT_INPUT_VALUE_EVENT_DISPATCHER_PROPS: Omit<WithInputValueEventDispat
  *   rlOnKeyDownAttr: "onKeyDown", // optional, default is "onKeyDown"
  *   rlEventValueGetter: (e) => e.target.value, // optional, default is EVENT_VALUE_GETTER
  *   rlInlineElementsAttrs: ["leftIcon", "rightIcon"], // optional, default is undefined
- *   type: "text", // actual component props are passed 
+ *   type: "text", // actual component props are passed
  * });
  */
 export function withInputValueEventDispatcher<T extends React.ElementType>(

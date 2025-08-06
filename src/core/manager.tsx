@@ -1,6 +1,13 @@
-import { produce } from "immer";
-import { applyActions, prependAddressToActions } from "./actions";
+import { produce, enableMapSet, setAutoFreeze } from "immer";
+import {
+  applyActions,
+  prependAddressToActions,
+} from "./actions";
 import { sendEventStream } from "./server-api";
+import { TargetMutex } from "./utils/mutex";
+
+enableMapSet();
+setAutoFreeze(false);
 
 type Handler = (args: RouteLitComponent) => void;
 type IsLoadingHandler = (args: boolean) => void;
@@ -16,17 +23,17 @@ interface RouteLitManagerProps {
 const THROTTLE_DELAY = 125; // 0.125 seconds
 
 const ROOT_ELEMENT: RouteLitComponent = {
-  key: "",
+  key: "root",
   name: "root",
   props: {},
   children: [],
 };
 
 export class RouteLitManager {
-  private listeners: Array<Handler> = [];
-  private isLoadingListeners: Array<IsLoadingHandler> = [];
-  private errorListeners: Array<ErrorHandler> = [];
-  private rootComponent?: RouteLitComponent | undefined;
+  private listeners: Set<Handler> = new Set();
+  private isLoadingListeners: Set<IsLoadingHandler> = new Set();
+  private errorListeners: Set<ErrorHandler> = new Set();
+  private rootComponent?: RouteLitComponent;
   private _isLoading: boolean = false;
   private _error?: Error;
   private fragmentId?: string;
@@ -34,11 +41,11 @@ export class RouteLitManager {
   private address?: number[];
   private lastURL?: string;
   private initialized: boolean = false;
-  private abortController?: AbortController;
   private actionAccumulator: Action[] = [];
   private currentTarget?: string;
   private throttleTimer?: NodeJS.Timeout;
   private lastExecutionTime: number = 0;
+  private mutex?: TargetMutex;
 
   constructor(props: RouteLitManagerProps) {
     this.fragmentId = props.fragmentId;
@@ -48,6 +55,7 @@ export class RouteLitManager {
     this.parentManager = props.parentManager;
     this.address = props.address;
     this.lastURL = props.parentManager?.getLastURL() ?? window.location.href;
+    this.mutex = props.fragmentId ? undefined : new TargetMutex();
   }
 
   getLastURL = (): string => {
@@ -55,11 +63,6 @@ export class RouteLitManager {
   };
 
   handleEvent = async (e: CustomEvent<UIEventPayload>) => {
-    if (this.abortController) {
-      this.abortController.abort();
-    }
-    this.abortController = new AbortController();
-
     if (e.detail.type === "navigate" && this.fragmentId) {
       // Let the upper manager handle the navigation
       return;
@@ -75,13 +78,11 @@ export class RouteLitManager {
     this._error = undefined;
     this._isLoading = true;
     this.notifyIsLoading();
+    const rootManager = this.getRootManager();
+    const eventTarget = this.fragmentId || "app";
+    const unlock = await rootManager.mutex!.lock(eventTarget);
     try {
-      this.abortController = new AbortController();
-      const responseStream = sendEventStream(
-        e,
-        this.fragmentId,
-        this.abortController
-      );
+      const responseStream = sendEventStream(e, this.fragmentId);
       for await (const response of responseStream) {
         if ("type" in response) {
           this.batchAction(response);
@@ -94,6 +95,8 @@ export class RouteLitManager {
     } finally {
       this._isLoading = false;
       this.notifyIsLoading();
+      this.flushActions(true);
+      unlock();
     }
     e.stopPropagation();
   };
@@ -329,29 +332,27 @@ export class RouteLitManager {
 
   subscribe = (listener: Handler): (() => void) => {
     const unsubscribeParent = this.parentManager?.subscribe(listener);
-    this.listeners.push(listener);
+    this.listeners.add(listener);
     return () => {
-      this.listeners = this.listeners.filter((l) => l !== listener);
+      this.listeners.delete(listener);
       unsubscribeParent?.();
     };
   };
 
   subscribeIsLoading = (listener: IsLoadingHandler): (() => void) => {
     const unsubscribeParent = this.parentManager?.subscribeIsLoading(listener);
-    this.isLoadingListeners.push(listener);
+    this.isLoadingListeners.add(listener);
     return () => {
-      this.isLoadingListeners = this.isLoadingListeners.filter(
-        (l) => l !== listener
-      );
+      this.isLoadingListeners.delete(listener);
       unsubscribeParent?.();
     };
   };
 
   subscribeError = (listener: ErrorHandler): (() => void) => {
     const unsubscribeParent = this.parentManager?.subscribeError(listener);
-    this.errorListeners.push(listener);
+    this.errorListeners.add(listener);
     return () => {
-      this.errorListeners = this.errorListeners.filter((l) => l !== listener);
+      this.errorListeners.delete(listener);
       unsubscribeParent?.();
     };
   };

@@ -1,10 +1,9 @@
 export async function sendEvent(
   event: CustomEvent<UIEventPayload>,
   fragmentId: string | undefined,
-  abortController: AbortController
 ): Promise<ActionsResponse> {
   // Get the first response from the stream for backward compatibility
-  const generator = sendEventStream(event, fragmentId, abortController);
+  const generator = sendEventStream(event, fragmentId);
   const result = await generator.next();
 
   if (result.done) {
@@ -17,16 +16,12 @@ export async function sendEvent(
 export async function* sendEventStream(
   event: CustomEvent<UIEventPayload>,
   fragmentId: string | undefined,
-  abortController: AbortController
 ): AsyncGenerator<ActionsResponse | Action> {
   if (event.detail.type === "navigate") {
-    yield* handleNavigateStream(
-      event as CustomEvent<NavigateEventPayload>,
-      abortController
-    );
+    yield* handleNavigateStream(event as CustomEvent<NavigateEventPayload>);
     return;
   }
-  yield* handleUIEventStream(event, fragmentId, abortController);
+  yield* handleUIEventStream(event, fragmentId);
 }
 
 interface UIEvent {
@@ -45,7 +40,6 @@ async function* sendUIEventStream(
   url: string,
   body: RequestBody,
   headers?: Record<string, string>,
-  abortController?: AbortController
 ): AsyncGenerator<ActionsResponse | Action> {
   const res = await fetch(url, {
     method: "POST",
@@ -55,7 +49,6 @@ async function* sendUIEventStream(
       ...headers,
     },
     credentials: "include",
-    signal: abortController?.signal,
   });
 
   if (!res.ok) {
@@ -128,7 +121,6 @@ async function* parseJsonLinesStream(
 async function* handleUIEventStream(
   event: CustomEvent<UIEventPayload>,
   fragmentId: string | undefined,
-  abortController: AbortController
 ): AsyncGenerator<ActionsResponse | Action> {
   const { id, type, formId, ...data } = event.detail;
   const url = new URL(window.location.href);
@@ -141,12 +133,11 @@ async function* handleUIEventStream(
     },
     fragmentId,
   };
-  yield* sendUIEventStream(url.toString(), body, undefined, abortController);
+  yield* sendUIEventStream(url.toString(), body, undefined);
 }
 
 async function* handleNavigateStream(
   event: CustomEvent<NavigateEventPayload>,
-  abortController: AbortController
 ): AsyncGenerator<ActionsResponse | Action> {
   const { href, id, type, lastURL, ...data } = event.detail;
   const body: RequestBody = {
@@ -164,7 +155,7 @@ async function* handleNavigateStream(
     headers["X-Referer"] = lastURL;
   }
 
-  yield* sendUIEventStream(href, body, headers, abortController);
+  yield* sendUIEventStream(href, body, headers);
 
   // Handle browser navigation after all responses are processed
   if (event.detail.replace) {

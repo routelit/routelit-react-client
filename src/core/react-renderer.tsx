@@ -8,21 +8,37 @@ interface Props {
   componentStore: ComponentStore;
 }
 
-function getElement(
-  name: string,
-  key: string,
-  address: number[] | undefined,
-  { children: childrenProp, ...props }: Record<string, unknown>,
-  children: RouteLitComponent[] | undefined,
-  componentStore: ComponentStore
-): React.ReactNode {
+interface RLElementProps {
+  name: string;
+  id: string;
+  address: number[] | undefined;
+  props: Record<string, unknown>;
+  children: RouteLitComponent[] | undefined;
+  componentStore: ComponentStore;
+}
+
+function RLElement({
+  name,
+  address,
+  id: key,
+  props,
+  children,
+  componentStore,
+}: RLElementProps) {
+  const { children: childrenProp, ...restProps } = props;
   if (name === "fragment") {
     return (
-      <Fragment key={key as string} id={props.id as string} address={address} />
+      <Fragment
+        key={key as string}
+        id={restProps.id as string}
+        address={address}
+      />
     );
   }
+
   const Component = componentStore.get(name);
   if (!Component) return null;
+
   return (
     <Suspense
       fallback={
@@ -31,7 +47,7 @@ function getElement(
         </div>
       }
     >
-      <Component id={key} key={key} {...props}>
+      <Component id={key} {...restProps}>
         {childrenProp ?? children?.map(renderComponentTree(componentStore))}
       </Component>
     </Suspense>
@@ -47,7 +63,7 @@ export function FinalComponent({
 }): React.ReactNode {
   const element = useMemo(
     () =>
-      getElement(c.name, c.key, c.address, c.props, c.children, componentStore),
+      <RLElement name={c.name} id={c.key} address={c.address} props={c.props} children={c.children} componentStore={componentStore} />,
     [c.name, c.key, c.address, c.props, c.children, componentStore]
   );
   if (c.virtual) {
@@ -59,8 +75,8 @@ export function FinalComponent({
 
 const renderComponentTree =
   (componentStore: ComponentStore) =>
-  (c: RouteLitComponent): React.ReactNode => {
-    return <FinalComponent key={c.key} c={c} componentStore={componentStore} />;
+  (c: RouteLitComponent, i: number): React.ReactNode => {
+    return <FinalComponent key={c.key + i} c={c} componentStore={componentStore} />;
   };
 
 function ReactRenderer({ manager, componentStore }: Props) {
