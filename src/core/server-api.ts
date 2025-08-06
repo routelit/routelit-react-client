@@ -1,6 +1,6 @@
 export async function sendEvent(
   event: CustomEvent<UIEventPayload>,
-  fragmentId: string | undefined,
+  fragmentId?: string,
 ): Promise<ActionsResponse> {
   // Get the first response from the stream for backward compatibility
   const generator = sendEventStream(event, fragmentId);
@@ -15,7 +15,7 @@ export async function sendEvent(
 
 export async function* sendEventStream(
   event: CustomEvent<UIEventPayload>,
-  fragmentId: string | undefined,
+  fragmentId?: string,
 ): AsyncGenerator<ActionsResponse | Action> {
   if (event.detail.type === "navigate") {
     yield* handleNavigateStream(event as CustomEvent<NavigateEventPayload>);
@@ -120,7 +120,7 @@ async function* parseJsonLinesStream(
 
 async function* handleUIEventStream(
   event: CustomEvent<UIEventPayload>,
-  fragmentId: string | undefined,
+  fragmentId?: string,
 ): AsyncGenerator<ActionsResponse | Action> {
   const { id, type, formId, ...data } = event.detail;
   const url = new URL(window.location.href);
