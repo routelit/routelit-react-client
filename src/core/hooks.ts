@@ -103,6 +103,45 @@ export function useRLInlineElement<T extends React.ElementType>(
   );
 }
 
+function getCallbackAttributes<T extends React.ElementType>(
+  props: Partial<ComponentProps<T>>,
+  rlCallbackAttrs: string[] | undefined
+): Record<keyof ComponentProps<T>, (...args: unknown[]) => unknown> | null {
+  if (!rlCallbackAttrs || rlCallbackAttrs.length === 0) return null;
+  const attributes = {} as Record<
+    keyof ComponentProps<T>,
+    (...args: unknown[]) => unknown
+  >;
+  for (const attr of rlCallbackAttrs) {
+    if (typeof props[attr] !== "string" || !props[attr]) continue;
+    attributes[attr as keyof ComponentProps<T>] = new Function(
+      props[attr] as string
+    ) as (...args: unknown[]) => unknown;
+  }
+  return attributes;
+}
+
+/**
+ * A hook that can be used to get the callback attributes of a component.
+ * where the callback string is converted to a function that is passed to the component.
+ * @param props - The props of the component.
+ * @param rlCallbackAttrs - The attributes to get.
+ * @returns The callback attributes of the component.
+ * @example
+ * // assumes props.onClick is a function body string like "console.log('click event', arguments[0]);"
+ * const callbackAttributes = useRLCallbackAttributes(props, ["onClick"]);
+ * return <button onClick={callbackAttributes.onClick}>Clickable</button>;
+ */
+export function useRLCallbackAttributes<T extends React.ElementType>(
+  props: Partial<ComponentProps<T>>,
+  rlCallbackAttrs: string[] | undefined
+): Record<keyof ComponentProps<T>, (...args: unknown[]) => unknown> | null {
+  return useMemo(
+    () => getCallbackAttributes(props, rlCallbackAttrs),
+    [props, rlCallbackAttrs]
+  );
+}
+
 /**
  * A hook that can be used to handle a link click event.
  * @param id - The id of the component.

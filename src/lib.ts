@@ -23,8 +23,9 @@ import {
   withValueEventDispatcher,
   withSimpleComponent,
   withInputValueEventDispatcher,
+  withCallbackAttributes,
 } from "./core/hoc";
-import { useLinkClickHandler } from "./core/hooks";
+import { useLinkClickHandler, useRLInlineElement, useRLCallbackAttributes } from "./core/hooks";
 
 // Define the type for our client interface
 export interface RoutelitClientType {
@@ -42,6 +43,9 @@ export interface RoutelitClientType {
   withSimpleComponent: typeof withSimpleComponent;
   withInputValueEventDispatcher: typeof withInputValueEventDispatcher;
   useLinkClickHandler: typeof useLinkClickHandler;
+  useRLInlineElement: typeof useRLInlineElement;
+  useRLCallbackAttributes: typeof useRLCallbackAttributes;
+  withCallbackAttributes: typeof withCallbackAttributes;
 }
 
 // Check if we already have an instance in the window object
@@ -146,6 +150,9 @@ export {
   withSimpleComponent,
   withInputValueEventDispatcher,
   useLinkClickHandler,
+  useRLInlineElement,
+  useRLCallbackAttributes,
+  withCallbackAttributes,
 };
 
 const RoutelitClient: RoutelitClientType = {
@@ -163,6 +170,9 @@ const RoutelitClient: RoutelitClientType = {
   withSimpleComponent,
   withInputValueEventDispatcher,
   useLinkClickHandler,
+  useRLInlineElement,
+  useRLCallbackAttributes,
+  withCallbackAttributes,
 };
 
 // Expose them globally

@@ -5,6 +5,7 @@ import {
   withEventDispatcher,
   withValueEventDispatcher,
   withInputValueEventDispatcher,
+  withCallbackAttributes,
 } from "../../core/hoc";
 import * as context from "../../core/context";
 
@@ -184,6 +185,34 @@ describe("HOC utilities", () => {
       
       fireEvent.keyDown(getByRole("textbox"), { key: "a" });
       expect(mockDispatch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("withCallbackAttributes", () => {
+    it("converts callback strings to functions and passes them", () => {
+      const Base = ({ onClick }: { onClick?: (...args: unknown[]) => unknown }) => (
+        <button onClick={() => onClick?.(2)}>Btn</button>
+      );
+      const Wrapped = withCallbackAttributes(Base, { rlCallbackAttrs: ["onClick"] });
+
+      const { getByRole } = render(<Wrapped onClick={"return arguments[0] * 3;" as unknown as ((...args: unknown[]) => unknown)} />);
+      
+      expect(() => fireEvent.click(getByRole("button"))).not.toThrow();
+    });
+
+    it("wraps input onChange string callback and logs input value", () => {
+      const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      const WrappedInput = withCallbackAttributes("input", { rlCallbackAttrs: ["onChange"], type: "text" });
+
+      const { getByRole } = render(
+        <WrappedInput onChange={"console.log(arguments[0].target.value)" as unknown as ((...args: unknown[]) => unknown)} />
+      );
+
+      const input = getByRole("textbox");
+      fireEvent.change(input, { target: { value: "hello" } });
+
+      expect(logSpy).toHaveBeenCalledWith("hello");
+      logSpy.mockRestore();
     });
   });
 }); 

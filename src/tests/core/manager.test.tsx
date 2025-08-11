@@ -13,6 +13,7 @@ vi.mock('../../core/server-api', () => ({
 vi.mock('../../core/actions', async (importOriginal) => {
   const actual = await importOriginal();
   return {
+    // @ts-expect-error - we're mocking the function
     ...actual,
     prependAddressToActions: vi.fn((resp: ActionsResponse, address: number[]) => ({
       ...resp,

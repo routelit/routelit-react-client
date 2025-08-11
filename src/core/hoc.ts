@@ -9,6 +9,7 @@ import {
   useInputChangeEvent,
   EVENT_VALUE_GETTER,
   useRLInlineElement,
+  useRLCallbackAttributes,
 } from "./hooks";
 
 /**
@@ -292,5 +293,29 @@ export function withInputValueEventDispatcher<T extends React.ElementType>(
       },
       children
     );
+  };
+}
+
+type WithCallbackAttributesProps = {
+  rlCallbackAttrs?: string[];
+};
+
+export function withCallbackAttributes<T extends React.ElementType>(
+  Component: T,
+  initialOptions?: Partial<ComponentProps<T> & WithCallbackAttributesProps>
+) {
+  const { rlCallbackAttrs: upperRlCallbackAttrs, ...initialProps } = {
+    ...initialOptions,
+  };
+  return function WithCallbackAttributes({ ...props }: ComponentProps<T>) {
+    const callbackAttributes = useRLCallbackAttributes(
+      props,
+      upperRlCallbackAttrs
+    );
+    return createElement(Component, {
+      ...initialProps,
+      ...props,
+      ...callbackAttributes,
+    });
   };
 }

@@ -14,6 +14,7 @@ import {
   withSimpleComponent,
   withInputValueEventDispatcher,
   useLinkClickHandler,
+  withCallbackAttributes,
 } from "./lib";
 
 // Export all necessary items
@@ -33,4 +34,5 @@ export {
   withSimpleComponent,
   withInputValueEventDispatcher,
   useLinkClickHandler,
+  withCallbackAttributes,
 };
