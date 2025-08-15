@@ -42,6 +42,8 @@ export default defineConfig(({ mode }) => {
         sourcemap: !isProd,
         // Don't clean output directory on second build
         emptyOutDir: isProd,
+        // Extract CSS to a separate file
+        cssCodeSplit: true,
         rollupOptions: {
           // make sure to externalize deps that shouldn't be bundled
           // into your library
@@ -54,7 +56,7 @@ export default defineConfig(({ mode }) => {
               'react-dom': 'ReactDOM',
               'react/jsx-runtime': 'jsxRuntime',
               './src/client.ts': 'RoutelitClient'
-            }
+            },
           }
         },
         outDir: 'dist',

@@ -8,6 +8,9 @@
       <rect x="0" y="0" width="100" height="45"/>
     </clipPath>
   </defs>
+  <symbol id="streetline" viewBox="0 0 20 20">
+    <polygon points="2,0 0,20 20,20 18,0"/>
+  </symbol>
 
   <g clip-path="url(#rounded-corners)">
     
@@ -18,10 +21,10 @@
     <path d="M38,45 L62,45 L100,100 L0,100 Z" fill="#1A3444"/>
     
     <g fill="#FAEEDC">
-      <rect x="46" y="82" width="8" height="10"/>
-      <rect x="47" y="68" width="6" height="7" />
-      <rect x="48" y="57" width="4" height="5" />
-      <rect x="48.5" y="48" width="3" height="4" />
+      <use href="#streetline" x="46" y="82" width="8" height="10" />
+      <use href="#streetline" x="47" y="68" width="6" height="7" />
+      <use href="#streetline" x="48" y="57" width="4" height="5" />
+      <use href="#streetline" x="48.5" y="48" width="3" height="4" />
     </g>
     
   </g>

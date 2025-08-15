@@ -1,6 +1,7 @@
 {
   "name": "routelit-client",
-  "version": "0.5.1",
+  "description": "Routelit React Client for building data and web applications in python over http.",
+  "version": "0.5.2",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/routelit/routelit-react-client.git"
@@ -9,6 +10,7 @@
   "main": "./dist/routelit-client.umd.js",
   "module": "./dist/routelit-client.es.js",
   "type": "module",
+  "license": "Apache-2.0",
   "scripts": {
     "build": "tsc -b && vite build",
     "build:lib:prod": "NODE_OPTIONS='--experimental-global-webcrypto' BUILD_TARGET=lib vite build --mode production",
@@ -73,6 +75,7 @@
         "production": "./dist/routelit-client.umd.js",
         "default": "./dist/routelit-client.umd.js"
       }
-    }
+    },
+    "./client.css": "./dist/client.css"
   }
 }
