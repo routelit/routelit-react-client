@@ -1,6 +1,4 @@
 import React from "react";
-import * as ReactDOM from "react-dom";
-import * as jsxRuntime from "react/jsx-runtime";
 
 import initManager from "./core/initializer";
 import { ComponentStore } from "./core/component-store";
@@ -25,7 +23,11 @@ import {
   withInputValueEventDispatcher,
   withCallbackAttributes,
 } from "./core/hoc";
-import { useLinkClickHandler, useRLInlineElement, useRLCallbackAttributes } from "./core/hooks";
+import {
+  useLinkClickHandler,
+  useRLInlineElement,
+  useRLCallbackAttributes,
+} from "./core/hooks";
 
 // Define the type for our client interface
 export interface RoutelitClientType {
@@ -56,13 +58,6 @@ let componentStore: ComponentStore;
 // Add this to the window type
 declare global {
   interface Window {
-    React: typeof React;
-    ReactDOM: typeof ReactDOM;
-    jsxRuntime: {
-      jsx: typeof React.createElement;
-      jsxs: typeof React.createElement;
-      Fragment: typeof React.Fragment;
-    };
     RoutelitClient?: RoutelitClientType;
     componentStore?: ComponentStore;
   }
@@ -89,9 +84,11 @@ const Checkbox = React.lazy(() => import("./components/checkbox"));
 const CheckboxGroup = React.lazy(() => import("./components/checkbox-group"));
 const Markdown = React.lazy(() => import("./components/markdown"));
 
-
 // Register components
-componentStore.register("root", withSimpleComponent("div", { className: "rl-container" }));
+componentStore.register(
+  "root",
+  withSimpleComponent("div", { className: "rl-container" })
+);
 componentStore.register("fragment", Fragment);
 componentStore.register("link", Link);
 componentStore.register("dialog", Dialog);
@@ -176,13 +173,6 @@ const RoutelitClient: RoutelitClientType = {
 };
 
 // Expose them globally
-window.React = React;
-window.ReactDOM = ReactDOM;
-window.jsxRuntime = {
-  jsx: React.createElement,
-  jsxs: React.createElement,
-  Fragment: React.Fragment,
-};
 window.RoutelitClient = RoutelitClient;
 
-export { React, ReactDOM, jsxRuntime, RoutelitClient };
+export { RoutelitClient };
