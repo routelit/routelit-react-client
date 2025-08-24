@@ -74,7 +74,7 @@ const RadioGroup = memo(function RadioGroup({
         </label>
       )}
       <div className={`rl-form-control-group rl-flex-${flexDirection}`}>
-        {options.map((option) => (
+        {options?.map((option) => (
           <RadioGroupOption
             key={typeof option === "string" ? option : option.value}
             id={id}

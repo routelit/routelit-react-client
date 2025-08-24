@@ -67,7 +67,7 @@ const CheckboxGroup = memo(function CheckboxGroup({
         </label>
       )}
       <div className={`rl-form-control-group rl-flex-${flexDirection}`}>
-        {options.map((option) => (
+        {options?.map((option) => (
           <CheckboxGroupOption
             key={typeof option === "string" ? option : option.value}
             id={id}

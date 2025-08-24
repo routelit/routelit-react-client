@@ -52,7 +52,7 @@ const Select = memo(function Select({
         required={required}
         onChange={handleChange}
       >
-        {options.map((option) => (
+        {options?.map((option) => (
           <SelectOption key={option.value} option={option} />
         ))}
       </select>
