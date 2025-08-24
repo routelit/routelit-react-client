@@ -1,4 +1,9 @@
-import { createContext, useContext, useCallback, useSyncExternalStore } from "react";
+import {
+  createContext,
+  useContext,
+  useCallback,
+  useSyncExternalStore,
+} from "react";
 import { type ComponentStore } from "./component-store";
 import { type RouteLitManager } from "./manager";
 import { useFormId } from "../components/form";
@@ -17,11 +22,30 @@ export const RouteLitContext = createContext<RouteLitContextType>({
 
 export function useRouteLitContext() {
   const context = useContext(RouteLitContext);
-  if (!context) {
-    throw new Error(
-      "useRouteLitContext must be used within a RouteLitContext.Provider"
-    );
+
+  if (!context || !context.manager || !context.componentStore) {
+    const globalManager = window.RoutelitClient?.manager;
+    const globalComponentStore =
+      window.RoutelitClient?.componentStore || window.componentStore;
+
+    if (globalManager && globalComponentStore) {
+      return {
+        manager: globalManager,
+        componentStore: globalComponentStore,
+        parentManager: undefined,
+      };
+    }
+
+    if (!context) {
+      console.warn(
+        "RouteLitContext not found and no global fallbacks available. This may cause errors."
+      );
+      throw new Error(
+        "useRouteLitContext must be used within a RouteLitContext.Provider"
+      );
+    }
   }
+
   return context;
 }
 
@@ -49,6 +73,7 @@ export function useDispatcher() {
  */
 export function useDispatcherWith(id: string, type: string) {
   const { manager } = useRouteLitContext();
+
   const callback = useCallback(
     (data: Record<string, unknown>) => {
       manager.handleEvent(
@@ -72,6 +97,7 @@ export function useDispatcherWith(id: string, type: string) {
  */
 export function useDispatcherWithAttr(id: string, type: string, attr: string) {
   const { manager } = useRouteLitContext();
+
   const callback = useCallback(
     (value: unknown) => {
       manager.handleEvent(
@@ -98,9 +124,18 @@ export function useDispatcherWithAttr(id: string, type: string, attr: string) {
 export function useFormDispatcher(id: string, type: string) {
   const { manager } = useRouteLitContext();
   const formId = useFormId();
-  const callback = useCallback((data: Record<string, unknown>) => {
-    manager.handleEvent(new CustomEvent<UIEventPayload>("routelit:event", { detail: { id, type, formId, ...data } }));
-  }, [manager, id, type, formId]);
+
+  const callback = useCallback(
+    (data: Record<string, unknown>) => {
+      manager.handleEvent(
+        new CustomEvent<UIEventPayload>("routelit:event", {
+          detail: { id, type, formId, ...data },
+        })
+      );
+    },
+    [manager, id, type, formId]
+  );
+
   return callback;
 }
 
@@ -115,27 +150,34 @@ export function useFormDispatcher(id: string, type: string) {
  * const onChange = useFormDispatcherWithAttr(id, "change", "value");
  * return <input onBlur={(e) => onChange(e.target.value)} />;
  */
-export function useFormDispatcherWithAttr(id: string, type: string, attr: string) {
+export function useFormDispatcherWithAttr(
+  id: string,
+  type: string,
+  attr: string
+) {
   const { manager } = useRouteLitContext();
   const formId = useFormId();
-  const callback = useCallback((value: unknown) => {
-    manager.handleEvent(new CustomEvent<UIEventPayload>("routelit:event", { detail: { id, type, formId, [attr]: value } }));
-  }, [manager, id, type, formId, attr]);
+
+  const callback = useCallback(
+    (value: unknown) => {
+      manager.handleEvent(
+        new CustomEvent<UIEventPayload>("routelit:event", {
+          detail: { id, type, formId, [attr]: value },
+        })
+      );
+    },
+    [manager, id, type, formId, attr]
+  );
+
   return callback;
 }
 
 export function useIsLoading(): boolean {
   const { manager } = useRouteLitContext();
-  return useSyncExternalStore(
-    manager.subscribeIsLoading,
-    manager.isLoading,
-  );
+  return useSyncExternalStore(manager.subscribeIsLoading, manager.isLoading);
 }
 
 export function useError(): Error | undefined {
   const { manager } = useRouteLitContext();
-  return useSyncExternalStore(
-    manager.subscribeError,
-    manager.getError,
-  );
+  return useSyncExternalStore(manager.subscribeError, manager.getError);
 }
