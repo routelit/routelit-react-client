@@ -579,4 +579,170 @@ describe("server-api", () => {
       expect(results[0]).toEqual(mockAction);
     });
   });
+
+  describe("file upload", () => {
+    it("should use FormData when files are included in event data", async () => {
+      const mockResponse = {
+        actions: [],
+        target: "fragment",
+      };
+
+      // Create a mock FormData to track what's passed
+      const mockFormData = {
+        append: vi.fn(),
+        has: vi.fn().mockReturnValue(true),
+      };
+
+      // Mock the global FormData constructor
+      const originalFormData = global.FormData;
+      global.FormData = vi.fn(() => mockFormData) as any;
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        headers: new Map([["content-type", "application/json"]]),
+        json: () => Promise.resolve(mockResponse),
+      });
+
+      // Create mock files
+      const mockFile = new File(["test content"], "test.txt", {
+        type: "text/plain",
+      });
+      const mockFiles = [mockFile] as unknown as FileList;
+
+      const event = new CustomEvent<UIEventPayload>("test", {
+        detail: { id: "file-input", type: "change", files: mockFiles },
+      });
+
+      await sendEvent(event);
+
+      // Verify FormData was used
+      expect(global.FormData).toHaveBeenCalled();
+      expect(mockFormData.append).toHaveBeenCalledWith(
+        "json",
+        expect.stringContaining('"componentId":"file-input"'),
+      );
+      expect(mockFormData.append).toHaveBeenCalledWith("files", mockFile);
+
+      // Restore original FormData
+      global.FormData = originalFormData;
+    });
+
+    it("should use JSON request when no files are included", async () => {
+      const mockResponse = {
+        actions: [],
+        target: "fragment",
+      };
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        headers: new Map([["content-type", "application/json"]]),
+        json: () => Promise.resolve(mockResponse),
+      });
+
+      const event = new CustomEvent<UIEventPayload>("test", {
+        detail: { id: "test-id", type: "click", data: "test" },
+      });
+
+      await sendEvent(event);
+
+      // Verify fetch was called with JSON body (not FormData)
+      expect(mockFetch).toHaveBeenCalledWith(
+        "http://localhost:3000/test",
+        expect.objectContaining({
+          method: "POST",
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+          }),
+          body: JSON.stringify({
+            uiEvent: {
+              componentId: "test-id",
+              type: "click",
+              data: { data: "test" },
+            },
+          }),
+        }),
+      );
+    });
+
+    it("should handle multiple files in FormData", async () => {
+      const mockResponse = {
+        actions: [],
+        target: "fragment",
+      };
+
+      const mockFormData = {
+        append: vi.fn(),
+        has: vi.fn().mockReturnValue(true),
+      };
+
+      const originalFormData = global.FormData;
+      global.FormData = vi.fn(() => mockFormData) as any;
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        headers: new Map([["content-type", "application/json"]]),
+        json: () => Promise.resolve(mockResponse),
+      });
+
+      // Create multiple mock files
+      const mockFile1 = new File(["content 1"], "file1.txt", {
+        type: "text/plain",
+      });
+      const mockFile2 = new File(["content 2"], "file2.txt", {
+        type: "text/plain",
+      });
+      const mockFiles = [mockFile1, mockFile2] as unknown as FileList;
+
+      const event = new CustomEvent<UIEventPayload>("test", {
+        detail: { id: "multi-file-input", type: "change", files: mockFiles },
+      });
+
+      await sendEvent(event);
+
+      // Verify both files were appended
+      expect(mockFormData.append).toHaveBeenCalledWith("files", mockFile1);
+      expect(mockFormData.append).toHaveBeenCalledWith("files", mockFile2);
+
+      global.FormData = originalFormData;
+    });
+
+    it("should handle file upload with fragment ID", async () => {
+      const mockResponse = {
+        actions: [],
+        target: "fragment",
+      };
+
+      const mockFormData = {
+        append: vi.fn(),
+        has: vi.fn().mockReturnValue(true),
+      };
+
+      const originalFormData = global.FormData;
+      global.FormData = vi.fn(() => mockFormData) as any;
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        headers: new Map([["content-type", "application/json"]]),
+        json: () => Promise.resolve(mockResponse),
+      });
+
+      const mockFile = new File(["test"], "test.txt", { type: "text/plain" });
+      const mockFiles = [mockFile] as unknown as FileList;
+
+      const event = new CustomEvent<UIEventPayload>("test", {
+        detail: { id: "file-input", type: "change", files: mockFiles },
+      });
+
+      const fragmentId = "test-fragment";
+      await sendEvent(event, fragmentId);
+
+      // Verify fragment ID was included in the JSON payload
+      expect(mockFormData.append).toHaveBeenCalledWith(
+        "json",
+        expect.stringContaining('"fragmentId":"test-fragment"'),
+      );
+
+      global.FormData = originalFormData;
+    });
+  });
 });

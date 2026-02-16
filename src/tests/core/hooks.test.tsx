@@ -1,6 +1,13 @@
 import { renderHook, render } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { useInputChangeEvent, EVENT_VALUE_GETTER, useRLInlineElement, useRLCallbackAttributes, useLinkClickHandler } from "../../core/hooks";
+import {
+  useInputChangeEvent,
+  EVENT_VALUE_GETTER,
+  useRLInlineElement,
+  useRLCallbackAttributes,
+  useLinkClickHandler,
+  useInputFileChangeEvent,
+} from "../../core/hooks";
 import * as context from "../../core/context";
 
 // Extend the mock to include useComponentStore for inline element tests
@@ -200,6 +207,60 @@ describe("Hooks", () => {
       expect(preventDefault).not.toHaveBeenCalled();
       expect(stopPropagation).not.toHaveBeenCalled();
       expect(dispatchSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("useInputFileChangeEvent", () => {
+    const mockDispatch = vi.fn();
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+      (
+        context.useFormDispatcherWithAttr as unknown as {
+          mockReturnValue: (v: unknown) => void;
+        }
+      ).mockReturnValue(mockDispatch);
+    });
+
+    it("dispatches files on change event", () => {
+      const { result } = renderHook(() =>
+        useInputFileChangeEvent("file-input"),
+      );
+
+      const mockFileList = new File(["test content"], "test.txt", {
+        type: "text/plain",
+      });
+      const mockFiles = [mockFileList] as unknown as FileList;
+
+      result.current({
+        target: { files: mockFiles },
+      } as React.ChangeEvent<HTMLInputElement>);
+
+      expect(mockDispatch).toHaveBeenCalledWith(mockFiles);
+    });
+
+    it("dispatches null files when no file selected", () => {
+      const { result } = renderHook(() =>
+        useInputFileChangeEvent("file-input"),
+      );
+
+      result.current({
+        target: { files: null },
+      } as React.ChangeEvent<HTMLInputElement>);
+
+      expect(mockDispatch).toHaveBeenCalledWith(null);
+    });
+
+    it("dispatches empty FileList when clearing files", () => {
+      const { result } = renderHook(() =>
+        useInputFileChangeEvent("file-input"),
+      );
+
+      result.current({
+        target: { files: null },
+      } as React.ChangeEvent<HTMLInputElement>);
+
+      expect(mockDispatch).toHaveBeenCalled();
     });
   });
 });

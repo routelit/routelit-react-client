@@ -12,7 +12,7 @@ function Fragment({ id, address }: Props) {
   const { componentStore, manager: parentManager } = useRouteLitContext();
   const manager = useMemo(
     () => new RouteLitManager({ fragmentId: id, parentManager, address }),
-    [address, id, parentManager]
+    [address, id, parentManager],
   );
   return (
     <RouteLitContext.Provider value={{ manager, componentStore }}>

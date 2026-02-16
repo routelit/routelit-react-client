@@ -83,6 +83,7 @@ const Textarea = React.lazy(() => import("./components/textarea"));
 const Checkbox = React.lazy(() => import("./components/checkbox"));
 const CheckboxGroup = React.lazy(() => import("./components/checkbox-group"));
 const Markdown = React.lazy(() => import("./components/markdown"));
+const InputFile = React.lazy(() => import("./components/input-file"));
 
 // Register components
 componentStore.register(
@@ -130,6 +131,7 @@ componentStore.register(
   })
 );
 componentStore.register("checkbox-group", CheckboxGroup);
+componentStore.register("input-file", InputFile);
 componentStore.forceUpdate();
 
 export {

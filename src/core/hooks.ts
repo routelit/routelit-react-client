@@ -62,6 +62,24 @@ export function useInputChangeEvent<
   return { handleBlur, handleKeyDown };
 }
 
+/**
+ * A hook that can be used to handle a file input change event.
+ * @param id - The id of the component.
+ * @returns A function that can be used to handle a file input change event.
+ * @example
+ * const handleChange = useInputFileChangeEvent("input_id");
+ * return <input type="file" onChange={handleChange} />;
+ */
+export function useInputFileChangeEvent(
+  id: string,
+) {
+  const dispatchChange = useFormDispatcherWithAttr(id, "change", "files");
+  return (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("useInputFileChangeEvent dispatchChange e.target.files", e.target.files);
+    dispatchChange(e.target.files);
+  };
+}
+
 function getInlineElements<T extends React.ElementType>(
   props: Partial<ComponentProps<T>>,
   elementKeys: (keyof ComponentProps<T>)[] | undefined,
