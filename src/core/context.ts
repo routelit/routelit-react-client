@@ -38,10 +38,10 @@ export function useRouteLitContext() {
 
     if (!context) {
       console.warn(
-        "RouteLitContext not found and no global fallbacks available. This may cause errors."
+        "RouteLitContext not found and no global fallbacks available. This may cause errors.",
       );
       throw new Error(
-        "useRouteLitContext must be used within a RouteLitContext.Provider"
+        "useRouteLitContext must be used within a RouteLitContext.Provider",
       );
     }
   }
@@ -79,10 +79,10 @@ export function useDispatcherWith(id: string, type: string) {
       manager.handleEvent(
         new CustomEvent<UIEventPayload>("routelit:event", {
           detail: { id, type, ...data },
-        })
+        }),
       );
     },
-    [manager, id, type]
+    [manager, id, type],
   );
   return callback;
 }
@@ -103,10 +103,10 @@ export function useDispatcherWithAttr(id: string, type: string, attr: string) {
       manager.handleEvent(
         new CustomEvent<UIEventPayload>("routelit:event", {
           detail: { id, type, [attr]: value },
-        })
+        }),
       );
     },
-    [manager, id, type, attr]
+    [manager, id, type, attr],
   );
   return callback;
 }
@@ -130,10 +130,10 @@ export function useFormDispatcher(id: string, type: string) {
       manager.handleEvent(
         new CustomEvent<UIEventPayload>("routelit:event", {
           detail: { id, type, formId, ...data },
-        })
+        }),
       );
     },
-    [manager, id, type, formId]
+    [manager, id, type, formId],
   );
 
   return callback;
@@ -153,7 +153,7 @@ export function useFormDispatcher(id: string, type: string) {
 export function useFormDispatcherWithAttr(
   id: string,
   type: string,
-  attr: string
+  attr: string,
 ) {
   const { manager } = useRouteLitContext();
   const formId = useFormId();
@@ -163,10 +163,10 @@ export function useFormDispatcherWithAttr(
       manager.handleEvent(
         new CustomEvent<UIEventPayload>("routelit:event", {
           detail: { id, type, formId, [attr]: value },
-        })
+        }),
       );
     },
-    [manager, id, type, formId, attr]
+    [manager, id, type, formId, attr],
   );
 
   return callback;

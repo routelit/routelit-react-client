@@ -1,8 +1,5 @@
 import { produce, enableMapSet, setAutoFreeze } from "immer";
-import {
-  applyActions,
-  prependAddressToActions,
-} from "./actions";
+import { applyActions, prependAddressToActions } from "./actions";
 import { sendEventStream } from "./server-api";
 import { TargetMutex } from "./utils/mutex";
 
@@ -51,7 +48,7 @@ export class RouteLitManager {
     this.fragmentId = props.fragmentId;
     this.rootComponent = props.fragmentId
       ? undefined
-      : props.rootComponent ?? ROOT_ELEMENT;
+      : (props.rootComponent ?? ROOT_ELEMENT);
     this.parentManager = props.parentManager;
     this.address = props.address;
     this.lastURL = props.parentManager?.getLastURL() ?? window.location.href;
@@ -208,7 +205,7 @@ export class RouteLitManager {
           id: "browser-navigation",
           type: "initialize",
         },
-      }
+      },
     );
     this.handleEvent(initializeEvent);
     this.initialized = true;
@@ -218,7 +215,7 @@ export class RouteLitManager {
     this.initializeDOM();
     document.addEventListener(
       "routelit:event",
-      this.handleEvent as unknown as EventListener
+      this.handleEvent as unknown as EventListener,
     );
     window.addEventListener("popstate", this.handlePopState as EventListener);
   };
@@ -234,7 +231,7 @@ export class RouteLitManager {
           href: currentUrl,
           lastURL: this.lastURL,
         },
-      }
+      },
     );
     document.dispatchEvent(navigateEvent);
   };
@@ -257,11 +254,11 @@ export class RouteLitManager {
 
     document.removeEventListener(
       "routelit:event",
-      this.handleEvent as unknown as EventListener
+      this.handleEvent as unknown as EventListener,
     );
     window.removeEventListener(
       "popstate",
-      this.handlePopState as EventListener
+      this.handlePopState as EventListener,
     );
   };
 
@@ -302,7 +299,7 @@ export class RouteLitManager {
     if (this.parentManager && this.address) {
       return RouteLitManager.getElementAtAddress(
         this.getRootManager().rootComponent!,
-        this.getCompleteAddressPath()
+        this.getCompleteAddressPath(),
       );
     }
     return this.rootComponent!;
@@ -318,11 +315,11 @@ export class RouteLitManager {
 
   static getElementAtAddress = (
     rootComponent: RouteLitComponent,
-    address: number[]
+    address: number[],
   ): RouteLitComponent => {
     const element = address.reduce(
       (acc, curr) => acc?.children?.[curr] as RouteLitComponent,
-      rootComponent
+      rootComponent,
     );
     if (!element) {
       throw new Error("Component not found at address: " + address.join(","));

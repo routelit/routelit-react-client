@@ -73,7 +73,7 @@ describe("server-api", () => {
             },
           }),
           credentials: "include",
-        })
+        }),
       );
     });
 
@@ -107,7 +107,7 @@ describe("server-api", () => {
           headers: expect.objectContaining({
             "X-Referer": "http://localhost:3000/old",
           }),
-        })
+        }),
       );
     });
 
@@ -122,7 +122,7 @@ describe("server-api", () => {
       });
 
       await expect(sendEvent(event)).rejects.toThrow(
-        "Failed to send server event"
+        "Failed to send server event",
       );
     });
 
@@ -156,7 +156,7 @@ describe("server-api", () => {
             },
             fragmentId: "test-fragment",
           }),
-        })
+        }),
       );
     });
 
@@ -179,7 +179,7 @@ describe("server-api", () => {
       });
 
       await expect(sendEvent(event)).rejects.toThrow(
-        "No response received from server"
+        "No response received from server",
       );
     });
   });
@@ -351,7 +351,7 @@ describe("server-api", () => {
       expect(window.history.pushState).toHaveBeenCalledWith(
         null,
         "",
-        "/new-page"
+        "/new-page",
       );
     });
 
@@ -384,7 +384,7 @@ describe("server-api", () => {
       expect(window.history.replaceState).toHaveBeenCalledWith(
         null,
         "",
-        "/replace-page"
+        "/replace-page",
       );
     });
 
@@ -427,7 +427,7 @@ describe("server-api", () => {
       expect(results[1]).toEqual(validResponse);
       expect(consoleSpy).toHaveBeenCalledWith(
         "Failed to parse final JSON chunk:",
-        expect.any(Error)
+        expect.any(Error),
       );
 
       consoleSpy.mockRestore();
@@ -471,7 +471,7 @@ describe("server-api", () => {
       const generator = sendEventStream(event);
 
       await expect(generator.next()).rejects.toThrow(
-        "Failed to send server event"
+        "Failed to send server event",
       );
     });
 
@@ -489,7 +489,7 @@ describe("server-api", () => {
       const generator = sendEventStream(event);
 
       await expect(generator.next()).rejects.toThrow(
-        "Response body is not readable"
+        "Response body is not readable",
       );
     });
 
@@ -526,7 +526,7 @@ describe("server-api", () => {
             },
             fragmentId: "test-fragment",
           }),
-        })
+        }),
       );
     });
 
@@ -549,7 +549,7 @@ describe("server-api", () => {
 
       expect(mockFetch).toHaveBeenCalledWith(
         "http://localhost:3000/test",
-        expect.objectContaining({})
+        expect.objectContaining({}),
       );
     });
 

@@ -62,9 +62,17 @@ export function FinalComponent({
   componentStore: ComponentStore;
 }): React.ReactNode {
   const element = useMemo(
-    () =>
-      <RLElement name={c.name} id={c.key} address={c.address} props={c.props} children={c.children} componentStore={componentStore} />,
-    [c.name, c.key, c.address, c.props, c.children, componentStore]
+    () => (
+      <RLElement
+        name={c.name}
+        id={c.key}
+        address={c.address}
+        props={c.props}
+        children={c.children}
+        componentStore={componentStore}
+      />
+    ),
+    [c.name, c.key, c.address, c.props, c.children, componentStore],
   );
   if (c.virtual) {
     return element;
@@ -76,13 +84,15 @@ export function FinalComponent({
 const renderComponentTree =
   (componentStore: ComponentStore) =>
   (c: RouteLitComponent, i: number): React.ReactNode => {
-    return <FinalComponent key={c.key + i} c={c} componentStore={componentStore} />;
+    return (
+      <FinalComponent key={c.key + i} c={c} componentStore={componentStore} />
+    );
   };
 
 function ReactRenderer({ manager, componentStore }: Props) {
   const rootComponent = useSyncExternalStore(
     manager.subscribe,
-    manager.getRootComponent
+    manager.getRootComponent,
   );
   useSyncExternalStore(componentStore.subscribe, componentStore.getVersion);
   return (

@@ -13,7 +13,7 @@ import * as context from "../../core/context";
 // Extend the mock to include useComponentStore for inline element tests
 vi.mock("../../core/context", () => ({
   useFormDispatcherWithAttr: vi.fn(),
-  useComponentStore: vi.fn()
+  useComponentStore: vi.fn(),
 }));
 
 describe("Hooks", () => {
@@ -23,12 +23,18 @@ describe("Hooks", () => {
 
     beforeEach(() => {
       vi.clearAllMocks();
-      (context.useFormDispatcherWithAttr as unknown as { mockReturnValue: (v: unknown) => void }).mockReturnValue(mockDispatch);
+      (
+        context.useFormDispatcherWithAttr as unknown as {
+          mockReturnValue: (v: unknown) => void;
+        }
+      ).mockReturnValue(mockDispatch);
     });
 
     it("dispatches value on blur when value changes", () => {
-      const { result } = renderHook(() => useInputChangeEvent("test", initialValue));
-      
+      const { result } = renderHook(() =>
+        useInputChangeEvent("test", initialValue),
+      );
+
       result.current.handleBlur({
         currentTarget: { value: "new value" },
       } as React.FocusEvent<HTMLInputElement>);
@@ -37,8 +43,10 @@ describe("Hooks", () => {
     });
 
     it("does not dispatch on blur when value is unchanged", () => {
-      const { result } = renderHook(() => useInputChangeEvent("test", initialValue));
-      
+      const { result } = renderHook(() =>
+        useInputChangeEvent("test", initialValue),
+      );
+
       result.current.handleBlur({
         currentTarget: { value: initialValue },
       } as React.FocusEvent<HTMLInputElement>);
@@ -47,8 +55,10 @@ describe("Hooks", () => {
     });
 
     it("dispatches value on Enter key when value changes", () => {
-      const { result } = renderHook(() => useInputChangeEvent("test", initialValue));
-      
+      const { result } = renderHook(() =>
+        useInputChangeEvent("test", initialValue),
+      );
+
       result.current.handleKeyDown({
         key: "Enter",
         currentTarget: { value: "new value" },
@@ -58,8 +68,10 @@ describe("Hooks", () => {
     });
 
     it("does not dispatch on Enter key when value is unchanged", () => {
-      const { result } = renderHook(() => useInputChangeEvent("test", initialValue));
-      
+      const { result } = renderHook(() =>
+        useInputChangeEvent("test", initialValue),
+      );
+
       result.current.handleKeyDown({
         key: "Enter",
         currentTarget: { value: initialValue },
@@ -69,8 +81,10 @@ describe("Hooks", () => {
     });
 
     it("does not dispatch on non-Enter key press", () => {
-      const { result } = renderHook(() => useInputChangeEvent("test", initialValue));
-      
+      const { result } = renderHook(() =>
+        useInputChangeEvent("test", initialValue),
+      );
+
       result.current.handleKeyDown({
         key: "a",
         currentTarget: { value: "new value" },
@@ -80,12 +94,16 @@ describe("Hooks", () => {
     });
 
     it("uses custom value getter when provided", () => {
-      const customGetter = (e: React.FocusEvent<HTMLInputElement> | React.KeyboardEvent<HTMLInputElement> | React.ChangeEvent<HTMLInputElement>) => 
-        e.currentTarget.value.toUpperCase();
-      const { result } = renderHook(() => 
-        useInputChangeEvent("test", initialValue, customGetter)
+      const customGetter = (
+        e:
+          | React.FocusEvent<HTMLInputElement>
+          | React.KeyboardEvent<HTMLInputElement>
+          | React.ChangeEvent<HTMLInputElement>,
+      ) => e.currentTarget.value.toUpperCase();
+      const { result } = renderHook(() =>
+        useInputChangeEvent("test", initialValue, customGetter),
       );
-      
+
       result.current.handleBlur({
         currentTarget: { value: "new value" },
       } as React.FocusEvent<HTMLInputElement>);
@@ -111,10 +129,18 @@ describe("Hooks", () => {
 
     it("returns rendered inline elements for provided keys", () => {
       const fakeComponentStore = {
-        get: vi.fn(() => (props: { id: string }) => <div data-testid={`inline-${props.id}`}>Inline</div>),
-      } as unknown as { get: (name: string) => React.ComponentType<any> | null };
+        get: vi.fn(() => (props: { id: string }) => (
+          <div data-testid={`inline-${props.id}`}>Inline</div>
+        )),
+      } as unknown as {
+        get: (name: string) => React.ComponentType<any> | null;
+      };
 
-      (context.useComponentStore as unknown as { mockReturnValue: (v: unknown) => void }).mockReturnValue(fakeComponentStore);
+      (
+        context.useComponentStore as unknown as {
+          mockReturnValue: (v: unknown) => void;
+        }
+      ).mockReturnValue(fakeComponentStore);
 
       function Test() {
         const props = {
@@ -131,7 +157,11 @@ describe("Hooks", () => {
 
     it("returns null when no element keys provided", () => {
       const fakeComponentStore = { get: vi.fn(() => null) } as any;
-      (context.useComponentStore as unknown as { mockReturnValue: (v: unknown) => void }).mockReturnValue(fakeComponentStore);
+      (
+        context.useComponentStore as unknown as {
+          mockReturnValue: (v: unknown) => void;
+        }
+      ).mockReturnValue(fakeComponentStore);
 
       function Test() {
         const props = {} as any;
@@ -150,7 +180,9 @@ describe("Hooks", () => {
         onClick: "return arguments[0] + 1;",
       } as any;
 
-      const { result } = renderHook(() => useRLCallbackAttributes(props, ["onClick"]));
+      const { result } = renderHook(() =>
+        useRLCallbackAttributes(props, ["onClick"]),
+      );
       expect(result.current).not.toBeNull();
       const fn = (result.current as any).onClick as (x: number) => number;
       expect(fn(1)).toBe(2);
@@ -161,7 +193,9 @@ describe("Hooks", () => {
         onClick: 123,
       } as any;
 
-      const { result } = renderHook(() => useRLCallbackAttributes(props, ["onClick"]));
+      const { result } = renderHook(() =>
+        useRLCallbackAttributes(props, ["onClick"]),
+      );
       expect(result.current).toEqual({});
       expect((result.current as any).onClick).toBeUndefined();
     });
@@ -173,8 +207,17 @@ describe("Hooks", () => {
     });
 
     it("dispatches navigate event and prevents default for internal links", () => {
-      const dispatchSpy = vi.spyOn(document, "dispatchEvent").mockImplementation(() => true);
-      const { result } = renderHook(() => useLinkClickHandler({ id: "link1", href: "/path", replace: false, isExternal: false }));
+      const dispatchSpy = vi
+        .spyOn(document, "dispatchEvent")
+        .mockImplementation(() => true);
+      const { result } = renderHook(() =>
+        useLinkClickHandler({
+          id: "link1",
+          href: "/path",
+          replace: false,
+          isExternal: false,
+        }),
+      );
 
       const preventDefault = vi.fn();
       const stopPropagation = vi.fn();
@@ -186,15 +229,31 @@ describe("Hooks", () => {
 
       expect(preventDefault).toHaveBeenCalled();
       expect(stopPropagation).toHaveBeenCalled();
-      expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        type: "routelit:event",
-        detail: expect.objectContaining({ id: "link1", type: "navigate", href: "/path", replace: false })
-      }));
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "routelit:event",
+          detail: expect.objectContaining({
+            id: "link1",
+            type: "navigate",
+            href: "/path",
+            replace: false,
+          }),
+        }),
+      );
     });
 
     it("does nothing for external links", () => {
-      const dispatchSpy = vi.spyOn(document, "dispatchEvent").mockImplementation(() => true);
-      const { result } = renderHook(() => useLinkClickHandler({ id: "link2", href: "https://example.com", replace: false, isExternal: true }));
+      const dispatchSpy = vi
+        .spyOn(document, "dispatchEvent")
+        .mockImplementation(() => true);
+      const { result } = renderHook(() =>
+        useLinkClickHandler({
+          id: "link2",
+          href: "https://example.com",
+          replace: false,
+          isExternal: true,
+        }),
+      );
 
       const preventDefault = vi.fn();
       const stopPropagation = vi.fn();
