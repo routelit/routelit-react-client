@@ -72,23 +72,28 @@ if (window.RoutelitClient) {
   componentStore = new ComponentStore();
 }
 
-const Dialog = React.lazy(() => import("./components/dialog"));
-const Container = React.lazy(() => import("./components/container"));
-const Expander = React.lazy(() => import("./components/expander"));
-const Flex = React.lazy(() => import("./components/flex"));
-const Input = React.lazy(() => import("./components/input"));
-const Radio = React.lazy(() => import("./components/radio"));
-const Select = React.lazy(() => import("./components/select"));
-const Textarea = React.lazy(() => import("./components/textarea"));
-const Checkbox = React.lazy(() => import("./components/checkbox"));
-const CheckboxGroup = React.lazy(() => import("./components/checkbox-group"));
+// Import components - hybrid approach:
+// - Eager load components that need React Context (Dialog, Form, Input, etc.)
+// - Lazy load heavy components like Markdown
+import Dialog from "./components/dialog";
+import Container from "./components/container";
+import Expander from "./components/expander";
+import Flex from "./components/flex";
+import Input from "./components/input";
+import Radio from "./components/radio";
+import Select from "./components/select";
+import Textarea from "./components/textarea";
+import Checkbox from "./components/checkbox";
+import CheckboxGroup from "./components/checkbox-group";
+import InputFile from "./components/input-file";
+
+// Lazy load only heavy components that don't need context
 const Markdown = React.lazy(() => import("./components/markdown"));
-const InputFile = React.lazy(() => import("./components/input-file"));
 
 // Register components
 componentStore.register(
   "root",
-  withSimpleComponent("div", { className: "rl-container" })
+  withSimpleComponent("div", { className: "rl-container" }),
 );
 componentStore.register("fragment", Fragment);
 componentStore.register("link", Link);
@@ -101,7 +106,7 @@ componentStore.register("image", withSimpleComponent("img"));
 componentStore.register("hr", withSimpleComponent("hr"));
 componentStore.register(
   "button",
-  withEventDispatcher("button", { type: "button" })
+  withEventDispatcher("button", { type: "button" }),
 );
 componentStore.register("expander", Expander);
 componentStore.register("title", withSimpleComponent("h1"));
@@ -111,14 +116,14 @@ componentStore.register("flex", Flex);
 componentStore.register("text-input", Input);
 componentStore.register(
   "single-text-input",
-  withInputValueEventDispatcher("input")
+  withInputValueEventDispatcher("input"),
 );
 componentStore.register("radio", Radio);
 componentStore.register("select", Select);
 componentStore.register("textarea", Textarea);
 componentStore.register(
   "single-textarea",
-  withInputValueEventDispatcher("textarea")
+  withInputValueEventDispatcher("textarea"),
 );
 componentStore.register("checkbox", Checkbox);
 componentStore.register(
@@ -128,7 +133,7 @@ componentStore.register(
     rlValueAttr: "checked",
     rlEventValueGetter: (e: React.ChangeEvent<HTMLInputElement>) =>
       e.currentTarget.checked,
-  })
+  }),
 );
 componentStore.register("checkbox-group", CheckboxGroup);
 componentStore.register("input-file", InputFile);

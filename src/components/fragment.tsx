@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, Suspense } from "react";
 import { useRouteLitContext, RouteLitContext } from "../core/context";
 import ReactRenderer from "../core/react-renderer";
 import { RouteLitManager } from "../core/manager";
@@ -15,8 +15,12 @@ function Fragment({ id, address }: Props) {
     [address, id, parentManager],
   );
   return (
-    <RouteLitContext.Provider value={{ manager, componentStore }}>
-      <ReactRenderer manager={manager} componentStore={componentStore} />
+    <RouteLitContext.Provider
+      value={{ manager, componentStore, parentManager }}
+    >
+      <Suspense fallback={<div>Loading...</div>}>
+        <ReactRenderer manager={manager} componentStore={componentStore} />
+      </Suspense>
     </RouteLitContext.Provider>
   );
 }
